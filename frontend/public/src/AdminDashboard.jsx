@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
@@ -10,6 +10,15 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
 
   const token = localStorage.getItem('admin_token');
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    fetchAdminProfile();
+    fetchUsers();
+  }, [token, navigate]);
 
   const fetchAdminProfile = async () => {
     try {
@@ -41,17 +50,6 @@ const AdminDashboard = () => {
       setError('Failed to load users');
     }
   };
-
-  useEffect(() => {
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    fetchAdminProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    fetchUsers();
-  }, [token, navigate]);
 
   const handleCreateUser = async (e) => {
     e.preventDefault();

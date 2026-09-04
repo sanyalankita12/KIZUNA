@@ -1,162 +1,34 @@
-from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException,
-    status
-)
+from fastapi import APIRouter, Depends
 
-from pydantic import (
-    BaseModel,
-    ConfigDict
-)
+from ..auth import get_current_user
+from ..models import User
 
-from sqlalchemy.orm import Session
+router = APIRouter(prefix="/api/trains", tags=["trains"])
 
-from app.database import get_db
+# Mirrors the stations/tracks currently hardcoded inside MapDashboard.jsx.
+# MapDashboard does not call this endpoint yet — it's here so the network
+# layout can be moved server-side later without redesigning anything.
+STATIONS = [
+    {"id": "RTM", "name": "Ratlam", "cx": 100, "cy": 300},
+    {"id": "NAD", "name": "Nagda", "cx": 250, "cy": 120},
+    {"id": "UJN", "name": "Ujjain", "cx": 500, "cy": 120},
+    {"id": "DWX", "name": "Dewas", "cx": 700, "cy": 200},
+    {"id": "BNG", "name": "Badnagar", "cx": 350, "cy": 450},
+    {"id": "FTD", "name": "Fatehabad", "cx": 600, "cy": 450},
+    {"id": "INDB", "name": "Indore", "cx": 850, "cy": 300},
+]
 
-from app.models import (
-    Train,
-    Station,
-    TrainStop
-)
-
-
-router = APIRouter(
-    prefix="/trains",
-    tags=["Trains"]
-)
-
-
-# ==========================================
-# RESPONSE SCHEMAS
-# ==========================================
-
-class TrainResponse(BaseModel):
-
-    model_config = ConfigDict(
-        from_attributes=True
-    )
-
-    train_no: int
-    train_name: str
-    train_type: str
-    route_via: str
-    direction: str
-    distance_km: int
+TRACKS = [
+    {"id": "T1", "from": "RTM", "to": "NAD"},
+    {"id": "T2", "from": "NAD", "to": "UJN"},
+    {"id": "T3", "from": "UJN", "to": "DWX"},
+    {"id": "T4", "from": "DWX", "to": "INDB"},
+    {"id": "T5", "from": "RTM", "to": "BNG"},
+    {"id": "T6", "from": "BNG", "to": "FTD"},
+    {"id": "T7", "from": "FTD", "to": "INDB"},
+]
 
 
-class StationResponse(BaseModel):
-
-    model_config = ConfigDict(
-        from_attributes=True
-    )
-
-    station_code: str
-    station_name: str
-
-
-class TrainStopResponse(BaseModel):
-
-    model_config = ConfigDict(
-        from_attributes=True
-    )
-
-    station_code: str
-    arrival_time: str | None
-    departure_time: str | None
-    stop_sequence: int
-
-
-# ==========================================
-# GET ALL TRAINS
-# ==========================================
-
-@router.get(
-    "",
-    response_model=list[TrainResponse]
-)
-def get_all_trains(
-
-    db: Session = Depends(
-        get_db
-    )
-
-):
-
-    trains = None  
-
-    return trains
-
-
-# ==========================================
-# GET SINGLE TRAIN
-# ==========================================
-
-@router.get(
-    "/{train_no}",
-    response_model=TrainResponse
-)
-def get_train(
-
-    train_no: int,
-
-    db: Session = Depends(
-        get_db
-    )
-
-):
-
-    train = None  
-
-    if train is None:
-
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Train not found"
-        )
-
-    return train
-
-
-# ==========================================
-# GET STOPS FOR A TRAIN
-# ==========================================
-
-@router.get(
-    "/{train_no}/stops",
-    response_model=list[TrainStopResponse]
-)
-def get_train_stops(
-
-    train_no: int,
-
-    db: Session = Depends(
-        get_db
-    )
-
-):
-
-    stops = None  
-
-    return stops
-
-
-# ==========================================
-# GET ALL STATIONS
-# ==========================================
-
-@router.get(
-    "/stations/all",
-    response_model=list[StationResponse]
-)
-def get_all_stations(
-
-    db: Session = Depends(
-        get_db
-    )
-
-):
-
-    stations = None 
-
-    return stations
+@router.get("/network")
+def get_network(current_user: User = Depends(get_current_user)):
+    return {"stations": STATIONS, "tracks": TRACKS}

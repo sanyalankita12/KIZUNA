@@ -1,254 +1,87 @@
 import os
-
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
 from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, status
-from fastapi.security import (
-    HTTPAuthorizationCredentials,
-    HTTPBearer
-)
+from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
-from app.database import get_db
-from app.models import Admin, User
-
+from .database import get_db
+from .models import Admin, User
 
 load_dotenv()
 
-
-SECRET_KEY = os.getenv("SECRET_KEY")
-
-
-if not SECRET_KEY:
-    raise RuntimeError(
-        "SECRET_KEY is missing in .env"
-    )
-
-
+SECRET_KEY = os.getenv("SECRET_KEY", "insecure-dev-secret-change-me")
 ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 
-ACCESS_TOKEN_EXPIRE_HOURS = 24
+# auto_error=False so we can raise our own 401 with a consistent JSON body
+# (the frontend reads response.ok, not the WWW-Authenticate challenge).
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/admin/login", auto_error=False)
 
+# Using bcrypt directly instead of passlib: passlib 1.7.4's bcrypt backend
+# detection crashes on bcrypt>=4.1 (a known, unfixed upstream incompatibility).
+_BCRYPT_MAX_BYTES = 72
 
-bearer_scheme = HTTPBearer()
-
-
-# ==========================================
-# PASSWORD HASHING
-# ==========================================
 
 def hash_password(password: str) -> str:
-
-    password_bytes = password.encode("utf-8")
-
-    # bcrypt only supports passwords up to 72 bytes
-    if len(password_bytes) > 72:
-        raise ValueError(
-            "Password cannot be longer than 72 bytes"
-        )
-
-    salt = bcrypt.gensalt()
-
-    hashed_password = bcrypt.hashpw(
-        password_bytes,
-        salt
-    )
-
-    return hashed_password.decode("utf-8")
+    pw_bytes = password.encode("utf-8")[:_BCRYPT_MAX_BYTES]
+    return bcrypt.hashpw(pw_bytes, bcrypt.gensalt()).decode("utf-8")
 
 
-# ==========================================
-# PASSWORD VERIFICATION
-# ==========================================
-
-def verify_password(
-    plain_password: str,
-    password_hash: str
-) -> bool:
-
-    password_bytes = plain_password.encode(
-        "utf-8"
-    )
-
-    if len(password_bytes) > 72:
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    pw_bytes = plain_password.encode("utf-8")[:_BCRYPT_MAX_BYTES]
+    try:
+        return bcrypt.checkpw(pw_bytes, hashed_password.encode("utf-8"))
+    except ValueError:
         return False
 
-    return bcrypt.checkpw(
-        password_bytes,
-        password_hash.encode("utf-8")
+
+def create_access_token(subject: str, role: str, user_id: int) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    payload = {"sub": subject, "role": role, "id": user_id, "exp": expire}
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def decode_token(token: str) -> dict:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
     )
+    try:
+        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        raise credentials_exception
 
-
-# ==========================================
-# CREATE JWT TOKEN
-# ==========================================
-
-def create_access_token(
-    username: str,
-    role: str
-) -> str:
-
-    expire = (
-        datetime.now(timezone.utc)
-        + timedelta(
-            hours=ACCESS_TOKEN_EXPIRE_HOURS
-        )
-    )
-
-    payload = {
-        "sub": username,
-        "role": role,
-        "exp": expire
-    }
-
-    return jwt.encode(
-        payload,
-        SECRET_KEY,
-        algorithm=ALGORITHM
-    )
-
-
-# ==========================================
-# GET CURRENT ADMIN
-# ==========================================
 
 def get_current_admin(
-
-    credentials: HTTPAuthorizationCredentials = Depends(
-        bearer_scheme
-    ),
-
-    db: Session = Depends(
-        get_db
-    )
-
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ) -> Admin:
-
-    token = credentials.credentials
-
-    try:
-
-        payload = jwt.decode(
-            token,
-            SECRET_KEY,
-            algorithms=[ALGORITHM]
-        )
-
-        username = payload.get("sub")
-        role = payload.get("role")
-
-        if not username:
-
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token"
-            )
-
-        if role != "admin":
-
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Administrator access required"
-            )
-
-    except JWTError:
-
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token"
-        )
-
-    admin = (
-        db.query(Admin)
-        .filter(
-            Admin.username == username
-        )
-        .first()
-    )
-
+    if not token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    payload = decode_token(token)
+    if payload.get("role") != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    admin = db.query(Admin).filter(Admin.id == payload.get("id")).first()
     if admin is None:
-
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Administrator not found"
-        )
-
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Admin not found")
     return admin
 
 
-# ==========================================
-# GET CURRENT USER
-# ==========================================
-
 def get_current_user(
-
-    credentials: HTTPAuthorizationCredentials = Depends(
-        bearer_scheme
-    ),
-
-    db: Session = Depends(
-        get_db
-    )
-
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ) -> User:
-
-    token = credentials.credentials
-
-    try:
-
-        payload = jwt.decode(
-            token,
-            SECRET_KEY,
-            algorithms=[ALGORITHM]
-        )
-
-        username = payload.get("sub")
-        role = payload.get("role")
-
-        if not username:
-
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token"
-            )
-
-        if role != "user":
-
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="User access required"
-            )
-
-    except JWTError:
-
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token"
-        )
-
-    user = (
-        db.query(User)
-        .filter(
-            User.username == username
-        )
-        .first()
-    )
-
+    if not token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    payload = decode_token(token)
+    if payload.get("role") != "user":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User access required")
+    user = db.query(User).filter(User.id == payload.get("id")).first()
     if user is None:
-
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found"
-        )
-
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     if not user.is_active:
-
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is inactive"
-        )
-
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is inactive")
     return user

@@ -1,312 +1,109 @@
 from datetime import datetime
+from typing import List
 
-from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException,
-    status
-)
-
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    Field
-)
-
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.auth import (
-    create_access_token,
-    get_current_admin,
-    hash_password,
-    verify_password
-)
+from ..auth import create_access_token, get_current_admin, hash_password, verify_password
+from ..database import get_db
+from ..models import Admin, User
 
-from app.database import get_db
-
-from app.models import (
-    Admin,
-    User
-)
+router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 
-router = APIRouter(
-    prefix="/admin",
-    tags=["Administrator"]
-)
-
-
-# ==========================================
-# REQUEST / RESPONSE SCHEMAS
-# ==========================================
+# ---- Schemas ----
 
 class AdminLoginRequest(BaseModel):
-
-    username: str = Field(
-        min_length=1,
-        max_length=100
-    )
-
-    password: str = Field(
-        min_length=1,
-        max_length=200
-    )
+    username: str
+    password: str
 
 
-class AdminResponse(BaseModel):
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
 
-    model_config = ConfigDict(
-        from_attributes=True
-    )
 
+class AdminProfileResponse(BaseModel):
     id: int
     username: str
     date_created: datetime
 
+    class Config:
+        from_attributes = True
 
-class CreateUserRequest(BaseModel):
 
-    username: str = Field(
-        min_length=3,
-        max_length=100
-    )
-
-    password: str = Field(
-        min_length=6,
-        max_length=200
-    )
+class UserCreateRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=50)
+    password: str = Field(min_length=6)
 
 
 class UserResponse(BaseModel):
-
-    model_config = ConfigDict(
-        from_attributes=True
-    )
-
     id: int
     username: str
     is_active: bool
     date_created: datetime
 
-
-# ==========================================
-# ADMIN LOGIN
-# ==========================================
-
-@router.post("/login")
-def admin_login(
-
-    data: AdminLoginRequest,
-
-    db: Session = Depends(
-        get_db
-    )
-
-):
-
-    admin = (
-        db.query(Admin)
-        .filter(
-            Admin.username == data.username
-        )
-        .first()
-    )
+    class Config:
+        from_attributes = True
 
 
-    if admin is None:
+# ---- Routes ----
 
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid administrator credentials"
-        )
-
-
-    password_is_correct = verify_password(
-        data.password,
-        admin.password_hash
-    )
-
-
-    if not password_is_correct:
-
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid administrator credentials"
-        )
+@router.post("/login", response_model=TokenResponse)
+def admin_login(payload: AdminLoginRequest, db: Session = Depends(get_db)):
+    admin = db.query(Admin).filter(Admin.username == payload.username).first()
+    if not admin or not verify_password(payload.password, admin.hashed_password):
+        # Login.jsx falls through to /api/users/login on a non-ok response,
+        # so this must be a normal 401 rather than a 500.
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
+    token = create_access_token(subject=admin.username, role="admin", user_id=admin.id)
+    return TokenResponse(access_token=token)
 
 
-    access_token = create_access_token(
-        username=admin.username,
-        role="admin"
-    )
-
-
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "role": "admin"
-    }
-
-
-# ==========================================
-# CURRENT ADMIN
-# ==========================================
-
-@router.get(
-    "/me",
-    response_model=AdminResponse
-)
-def get_admin_profile(
-
-    current_admin: Admin = Depends(
-        get_current_admin
-    )
-
-):
-
+@router.get("/me", response_model=AdminProfileResponse)
+def get_admin_profile(current_admin: Admin = Depends(get_current_admin)):
     return current_admin
 
 
-# ==========================================
-# GET ALL USERS
-# ==========================================
-
-@router.get(
-    "/users",
-    response_model=list[UserResponse]
-)
-def get_all_users(
-
-    current_admin: Admin = Depends(
-        get_current_admin
-    ),
-
-    db: Session = Depends(
-        get_db
-    )
-
+@router.get("/users", response_model=List[UserResponse])
+def list_users(
+    db: Session = Depends(get_db),
+    current_admin: Admin = Depends(get_current_admin),
 ):
-
-    users = (
-        db.query(User)
-        .order_by(User.id)
-        .all()
-    )
-
-    return users
+    return db.query(User).order_by(User.id.desc()).all()
 
 
-# ==========================================
-# CREATE USER
-# ==========================================
-
-@router.post(
-    "/users",
-    response_model=UserResponse,
-    status_code=status.HTTP_201_CREATED
-)
+@router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(
-
-    data: CreateUserRequest,
-
-    current_admin: Admin = Depends(
-        get_current_admin
-    ),
-
-    db: Session = Depends(
-        get_db
-    )
-
+    payload: UserCreateRequest,
+    db: Session = Depends(get_db),
+    current_admin: Admin = Depends(get_current_admin),
 ):
-
-    existing_user = (
-        db.query(User)
-        .filter(
-            User.username == data.username
-        )
-        .first()
-    )
-
-
-    if existing_user is not None:
-
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already exists"
-        )
-
+    existing = db.query(User).filter(User.username == payload.username).first()
+    if existing:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already exists")
 
     new_user = User(
-
-        username=data.username,
-
-        password_hash=hash_password(
-            data.password
-        ),
-
-        is_active=True
+        username=payload.username,
+        hashed_password=hash_password(payload.password),
+        is_active=True,
     )
-
-
-    db.add(
-        new_user
-    )
-
+    db.add(new_user)
     db.commit()
-
-    db.refresh(
-        new_user
-    )
-
-
+    db.refresh(new_user)
     return new_user
 
 
-# ==========================================
-# DELETE USER
-# ==========================================
-
-@router.delete(
-    "/users/{user_id}"
-)
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(
-
     user_id: int,
-
-    current_admin: Admin = Depends(
-        get_current_admin
-    ),
-
-    db: Session = Depends(
-        get_db
-    )
-
+    db: Session = Depends(get_db),
+    current_admin: Admin = Depends(get_current_admin),
 ):
-
-    user = (
-        db.query(User)
-        .filter(
-            User.id == user_id
-        )
-        .first()
-    )
-
-
-    if user is None:
-
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-
-
-    db.delete(
-        user
-    )
-
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    db.delete(user)
     db.commit()
-
-
-    return {
-        "message": "User deleted successfully"
-    }
+    return None

@@ -2,148 +2,52 @@ import os
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
-from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.admin import router as admin_router
-from app.api.user import router as user_router
-
-from app.auth import hash_password
-
-from app.database import (
-    Base,
-    SessionLocal,
-    engine
-)
-
-from app.models import Admin
-
+from .api import admin, trains, user
+from .auth import hash_password
+from .database import Base, SessionLocal, engine
+from .models import Admin
 
 load_dotenv()
 
+Base.metadata.create_all(bind=engine)
 
-app = FastAPI(
-    title="KIZUNA",
-    version="1.0.0"
-)
+app = FastAPI(title="Kizuna", version="1.0.0")
+
+origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"], 
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-Base.metadata.create_all(
-    bind=engine
-)
+app.include_router(admin.router)
+app.include_router(user.router)
+app.include_router(trains.router)
 
 
-# ==========================================
-# CREATE SINGLE ADMIN
-# ==========================================
-
-def create_initial_admin():
-
-    admin_username = os.getenv(
-        "ADMIN_USERNAME"
-    )
-
-    admin_password = os.getenv(
-        "ADMIN_PASSWORD"
-    )
-
-
-    if not admin_username:
-
-        raise RuntimeError(
-            "ADMIN_USERNAME is missing in .env"
-        )
-
-
-    if not admin_password:
-
-        raise RuntimeError(
-            "ADMIN_PASSWORD is missing in .env"
-        )
-
-
-    db: Session = SessionLocal()
-
-
+@app.on_event("startup")
+def seed_default_admin():
+    """Creates a default admin account on first run so /api/admin/login has
+    something to authenticate against. Override the credentials via .env
+    (ADMIN_USERNAME / ADMIN_PASSWORD) and change the password after first
+    login — this is a dev convenience, not meant for production as-is."""
+    db = SessionLocal()
     try:
-
-        existing_admin = (
-            db.query(Admin)
-            .first()
-        )
-
-
-        # Only one admin is allowed
-        if existing_admin is None:
-
-            admin = Admin(
-
-                username=admin_username,
-
-                password_hash=hash_password(
-                    admin_password
-                )
-            )
-
-
-            db.add(
-                admin
-            )
-
+        if db.query(Admin).count() == 0:
+            default_username = os.getenv("ADMIN_USERNAME", "admin")
+            default_password = os.getenv("ADMIN_PASSWORD", "admin123")
+            db.add(Admin(username=default_username, hashed_password=hash_password(default_password)))
             db.commit()
-
-            print(
-                "Initial administrator created successfully"
-            )
-
-
+            print(f"[startup] Created default admin '{default_username}' — change its password after first login.")
     finally:
-
         db.close()
 
 
-create_initial_admin()
-
-
-# ==========================================
-# INCLUDE ROUTERS
-# ==========================================
-
-app.include_router(
-    admin_router
-)
-
-app.include_router(
-    user_router
-)
-
-
-# ==========================================
-# ROOT
-# ==========================================
-
-@app.get("/")
-def root():
-
-    return {
-        "message": "KIZUNA Backend is running"
-    }
-
-
-# ==========================================
-# HEALTH CHECK
-# ==========================================
-
-@app.get("/health")
+@app.get("/api/health")
 def health_check():
-
-    return {
-        "status": "healthy"
-    }
+    return {"status": "ok"}

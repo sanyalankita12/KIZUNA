@@ -1,0 +1,22 @@
+train_no,train_name,train_type,route_via,direction,distance_km,origin_dep_indb,station_dwx_time,station_ftd_time,station_bng_time,station_ujn_time,station_nad_time,dest_arr_rtm
+14802,Indore-Jodhpur Express,Exp,Fatehabad,UP,119,04:20:00,,04:58:00,05:32:00,,,06:25:00
+79317,Dr. Ambedkar Nagar-Ratlam DEMU,DEMU,Fatehabad,UP,119,06:30:00,,07:22:00,08:08:00,,,09:20:00
+11126,Gwalior-Ratlam InterCity Express,Exp,Fatehabad,UP,119,07:25:00,,08:12:00,08:50:00,,,10:00:00
+21126,Bhind-Ratlam Express,Exp,Fatehabad,UP,119,07:25:00,,08:12:00,08:50:00,,,10:00:00
+79305,Dr. Ambedkar Nagar-Ratlam DEMU,DEMU,Fatehabad,UP,119,09:45:00,,10:35:00,11:22:00,,,12:50:00
+20497,Rameswaram-Firozpur Humsafar,Hms,Fatehabad,UP,116,13:30:00,,14:10:00,14:48:00,,,15:45:00
+19333,Indore-Bikaner Mahamana Express,Exp,Fatehabad,UP,119,13:40:00,,14:18:00,14:52:00,,,15:45:00
+79313,Dr. Ambedkar Nagar-Ratlam DEMU,DEMU,Fatehabad,UP,119,15:05:00,,15:55:00,16:45:00,,,18:05:00
+20957,Indore-Hisar SF Express,SF,Fatehabad,UP,119,16:45:00,,17:22:00,17:55:00,,,18:45:00
+19337,Indore-Delhi Sarai Rohilla Express,Exp,Fatehabad,UP,119,19:50:00,,20:25:00,20:56:00,,,21:40:00
+79309,Dr. Ambedkar Nagar-Ratlam DEMU,DEMU,Fatehabad,UP,119,20:10:00,,21:02:00,21:48:00,,,23:00:00
+20916,Indore-Charlapalli Humsafar Express,Hms,Ujjain-Nagda,UP,176,11:15:00,11:58:00,,,12:45:00,13:45:00,14:35:00
+9324,Indore-Khadki Special Fare Special,Exp,Ujjain-Nagda,UP,176,11:15:00,11:58:00,,,12:45:00,13:45:00,14:35:00
+22944,Indore-Daund SF Express,SF,Ujjain-Nagda,UP,176,16:30:00,17:15:00,,,18:00:00,18:58:00,19:45:00
+12962,Avantika SF Express,SF,Ujjain-Nagda,UP,176,17:45:00,18:25:00,,,19:05:00,20:00:00,20:30:00
+19315,Veer Bhumi Express,Exp,Ujjain-Nagda,UP,176,18:20:00,19:05:00,,,20:00:00,21:00:00,21:45:00
+12228,Indore-Mumbai Central Duronto,Drnt,Ujjain-Nagda,UP,176,21:00:00,21:35:00,,,22:10:00,22:55:00,23:30:00
+20932,Indore-Kochuveli Weekly SF Express,SF,Ujjain-Nagda,UP,176,21:40:00,22:25:00,,,23:10:00,00:05:00,00:45:00
+19320,Indore-Veraval Mahamana Express,Exp,Ujjain-Nagda,UP,176,22:20:00,23:05:00,,,23:55:00,00:45:00,01:30:00
+19310,Shanti Express,Exp,Ujjain-Nagda,UP,176,23:00:00,23:42:00,,,00:30:00,01:25:00,02:05:00
+20936,Indore-Gandhidham Weekly SF Express,SF,Ujjain-Nagda,UP,176,23:30:00,00:10:00,,,00:55:00,01:45:00,02:25:00

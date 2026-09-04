@@ -1,0 +1,43 @@
+train_no,train_name,train_type,route_via,direction,distance_km
+20498,Firozpur-Rameswaram Humsafar,Hms,Fatehabad,DOWN,116
+20958,Hisar-Indore SF Express,SF,Fatehabad,DOWN,119
+19338,Delhi Sarai Rohilla-Indore Express,Exp,Fatehabad,DOWN,119
+19334,Bikaner-Indore Mahamana Express,Exp,Fatehabad,DOWN,119
+79310,Ratlam-Dr. Ambedkar Nagar DEMU,DEMU,Fatehabad,DOWN,119
+79314,Ratlam-Dr. Ambedkar Nagar DEMU,DEMU,Fatehabad,DOWN,119
+79306,Ratlam-Dr. Ambedkar Nagar DEMU,DEMU,Fatehabad,DOWN,119
+11125,Ratlam-Gwalior InterCity Express,Exp,Fatehabad,DOWN,119
+21125,Ratlam-Bhind Express,Exp,Fatehabad,DOWN,119
+79318,Ratlam-Dr. Ambedkar Nagar DEMU,DEMU,Fatehabad,DOWN,119
+14801,Jodhpur-Indore Express,Exp,Fatehabad,DOWN,119
+19309,Shanti Express,Exp,Nagda-Ujjain,DOWN,176
+19316,Veer Bhumi Express,Exp,Nagda-Ujjain,DOWN,176
+22943,Daund-Indore SF Express,SF,Nagda-Ujjain,DOWN,176
+20935,Gandhidham-Indore Weekly SF Express,SF,Nagda-Ujjain,DOWN,176
+12961,Avantika SF Express,SF,Nagda-Ujjain,DOWN,176
+12227,Mumbai Central-Indore Duronto,Drnt,Nagda-Ujjain,DOWN,176
+19319,Veraval-Indore Mahamana Express,Exp,Nagda-Ujjain,DOWN,176
+20915,Charlapalli-Indore Humsafar Express,Hms,Nagda-Ujjain,DOWN,176
+9323,Khadki-Indore Special Fare Special,SF,Nagda-Ujjain,DOWN,176
+20931,Kochuveli-Indore Weekly SF Express,SF,Nagda-Ujjain,DOWN,176
+14802,Indore-Jodhpur Express,Exp,Fatehabad,UP,119
+79317,Dr. Ambedkar Nagar-Ratlam DEMU,DEMU,Fatehabad,UP,119
+11126,Gwalior-Ratlam InterCity Express,Exp,Fatehabad,UP,119
+21126,Bhind-Ratlam Express,Exp,Fatehabad,UP,119
+79305,Dr. Ambedkar Nagar-Ratlam DEMU,DEMU,Fatehabad,UP,119
+20497,Rameswaram-Firozpur Humsafar,Hms,Fatehabad,UP,116
+19333,Indore-Bikaner Mahamana Express,Exp,Fatehabad,UP,119
+79313,Dr. Ambedkar Nagar-Ratlam DEMU,DEMU,Fatehabad,UP,119
+20957,Indore-Hisar SF Express,SF,Fatehabad,UP,119
+19337,Indore-Delhi Sarai Rohilla Express,Exp,Fatehabad,UP,119
+79309,Dr. Ambedkar Nagar-Ratlam DEMU,DEMU,Fatehabad,UP,119
+20916,Indore-Charlapalli Humsafar Express,Hms,Ujjain-Nagda,UP,176
+9324,Indore-Khadki Special Fare Special,Exp,Ujjain-Nagda,UP,176
+22944,Indore-Daund SF Express,SF,Ujjain-Nagda,UP,176
+12962,Avantika SF Express,SF,Ujjain-Nagda,UP,176
+19315,Veer Bhumi Express,Exp,Ujjain-Nagda,UP,176
+12228,Indore-Mumbai Central Duronto,Drnt,Ujjain-Nagda,UP,176
+20932,Indore-Kochuveli Weekly SF Express,SF,Ujjain-Nagda,UP,176
+19320,Indore-Veraval Mahamana Express,Exp,Ujjain-Nagda,UP,176
+19310,Shanti Express,Exp,Ujjain-Nagda,UP,176
+20936,Indore-Gandhidham Weekly SF Express,SF,Ujjain-Nagda,UP,176

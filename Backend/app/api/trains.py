@@ -1,7 +1,12 @@
 from fastapi import APIRouter, Depends
 
+from sqlalchemy.orm import Session
+
 from ..auth import get_current_user
-from ..models import User
+from ..database import get_db
+from ..models import User, Station, Train, TrainStop
+
+
 
 router = APIRouter(prefix="/api/trains", tags=["trains"])
 
@@ -32,3 +37,70 @@ TRACKS = [
 @router.get("/network")
 def get_network(current_user: User = Depends(get_current_user)):
     return {"stations": STATIONS, "tracks": TRACKS}
+
+@router.get("/stations")
+def get_stations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    stations = db.query(Station).all()
+
+    return [
+        {
+            "code": station.station_code,
+            "name": station.station_name,
+        }
+        for station in stations
+    ]
+
+
+@router.get("/trains")
+def get_trains(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    trains = db.query(Train).all()
+
+    return [
+        {
+            "train_no": train.train_no,
+            "train_name": train.train_name,
+            "train_type": train.train_type,
+            "route_via": train.route_via,
+            "direction": train.direction,
+            "distance_km": train.distance_km,
+        }
+        for train in trains
+    ]
+
+
+@router.get("/train-stops")
+def get_train_stops(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    stops = (
+        db.query(TrainStop)
+        .order_by(TrainStop.train_no, TrainStop.stop_sequence)
+        .all()
+    )
+
+    return [
+        {
+            "id": stop.id,
+            "train_no": stop.train_no,
+            "station_code": stop.station_code,
+            "arrival_time": (
+                stop.arrival_time.strftime("%H:%M:%S")
+                if stop.arrival_time
+                else None
+            ),
+            "departure_time": (
+                stop.departure_time.strftime("%H:%M:%S")
+                if stop.departure_time
+                else None
+            ),
+            "stop_sequence": stop.stop_sequence,
+        }
+        for stop in stops
+    ]

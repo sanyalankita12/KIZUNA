@@ -81,7 +81,11 @@ const AdminDashboard = () => {
 
       const data = await response.json();
 
-      setUsers(Array.isArray(data) ? data : []);
+      setUsers(
+        Array.isArray(data)
+          ? [...data].sort((a, b) => a.id - b.id)
+          : []
+      );
     } catch (err) {
       console.error('Users error:', err);
       setError(err.message);
@@ -430,7 +434,7 @@ const AdminDashboard = () => {
 
                 <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                   <tr>
-                    <th className="px-6 py-4">ID</th>
+                    <th className="px-6 py-4">S.No</th>
                     <th className="px-6 py-4">Username</th>
                     <th className="px-6 py-4">Status</th>
                     <th className="px-6 py-4">Created</th>
@@ -461,14 +465,14 @@ const AdminDashboard = () => {
                       </td>
                     </tr>
                   ) : (
-                    users.map((user) => (
+                    users.map((user, index) => (
                       <tr
                         key={user.id}
                         className="transition hover:bg-gray-50"
                       >
 
                         <td className="px-6 py-4 font-semibold text-gray-700">
-                          #{user.id}
+                          #{index + 1}
                         </td>
 
                         <td className="px-6 py-4 font-medium text-gray-900">
@@ -477,11 +481,10 @@ const AdminDashboard = () => {
 
                         <td className="px-6 py-4">
                           <span
-                            className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
-                              user.is_active
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${user.is_active
                                 ? 'bg-green-100 text-green-700'
                                 : 'bg-red-100 text-red-700'
-                            }`}
+                              }`}
                           >
                             {user.is_active
                               ? 'Active'
@@ -492,8 +495,8 @@ const AdminDashboard = () => {
                         <td className="px-6 py-4 text-gray-500">
                           {user.date_created
                             ? new Date(
-                                user.date_created
-                              ).toLocaleDateString()
+                              user.date_created
+                            ).toLocaleDateString()
                             : '—'}
                         </td>
 

@@ -64,6 +64,12 @@ class MaintenanceTask(Base):
 
     department = Column(String(50), nullable=False)
 
+    criticality = Column(
+    String(20),
+    nullable=False,
+    default="Medium"
+    )
+
     severity = Column(String(20), nullable=False)
     urgency = Column(String(20), nullable=False)
 
@@ -75,6 +81,7 @@ class MaintenanceTask(Base):
         default="Pending"
     )
 
+    
     created_at = Column(
         DateTime,
         default=datetime.utcnow

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from ..auth import create_access_token, get_current_admin, hash_password, verify_password
 from ..database import get_db
 from ..models import Admin, User
+from ..models import MaintenanceTask
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -107,3 +108,31 @@ def delete_user(
     db.delete(user)
     db.commit()
     return None
+
+@router.get("/department-data")
+def get_department_data(
+    db: Session = Depends(get_db),
+    current_admin: Admin = Depends(get_current_admin),
+):
+    tasks = (
+        db.query(MaintenanceTask)
+        .order_by(MaintenanceTask.id.desc())
+        .all()
+    )
+
+    return [
+        {
+            "id": task.id,
+            "title": task.title,
+            "department": task.department,
+            "section": f"{task.section_from}-{task.section_to}",
+            "duration_minutes": task.duration_minutes,
+            "status": task.status,
+            "planned_date": (
+                task.planned_date.isoformat()
+                if task.planned_date
+                else None
+            ),
+        }
+        for task in tasks
+    ]

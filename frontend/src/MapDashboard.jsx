@@ -1,41 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
 
 const ftdDownData = [
   { id: '20498', name: 'Fmz-Rmm Hms' }, { id: '20958', name: 'Hisar-INDB SF' },
-  { id: '19338', name: 'DLI-INDB Exp' }, { id: '19334', name: 'BKN-INDB Exp' },
-  { id: '79310', name: 'RTM-DADN DMU' }, { id: '79314', name: 'RTM-DADN DMU' },
-  { id: '79306', name: 'RTM-DADN DMU' }, { id: '11125', name: 'RTM-GWL Exp' },
-  { id: '21125', name: 'RTM-Bhind Exp' }, { id: '79318', name: 'RTM-DADN DMU' },
-  { id: '14801', name: 'JU-INDB Exp' }
+  { id: '19338', name: 'DLI-INDB Exp' }, { id: '79310', name: 'RTM-DADN DMU' }
 ].map(t => ({ ...t, path: ['RTM', 'BNG', 'FTD', 'INDB'] }));
 
 const ujnDownData = [
-  { id: '19309', name: 'Shanti Exp' }, { id: '19316', name: 'Veer Bhumi' },
-  { id: '22943', name: 'Daund-INDB SF' }, { id: '20935', name: 'GIMB-INDB SF' },
-  { id: '12961', name: 'Avantika SF' }, { id: '12227', name: 'MMCT-INDB' },
-  { id: '19319', name: 'Veraval-INDB' }, { id: '20915', name: 'Charlapalli' },
-  { id: '9323', name: 'Khadki-INDB' }
+  { id: '12961', name: 'Avantika SF' }, { id: '12227', name: 'MMCT-INDB' }
 ].map(t => ({ ...t, path: ['RTM', 'NAD', 'UJN', 'DWX', 'INDB'] }));
 
 const ftdUpData = [
   { id: '14802', name: 'INDB-JU Exp' }, { id: '79317', name: 'DADN-RTM DMU' },
-  { id: '11126', name: 'GWL-RTM Exp' }, { id: '21126', name: 'Bhind-RTM Exp' },
-  { id: '79305', name: 'DADN-RTM DMU' }, { id: '20497', name: 'RMM-FZR Hms' },
-  { id: '19333', name: 'INDB-BKN Exp' }, { id: '79313', name: 'DADN-RTM DMU' },
-  { id: '20957', name: 'INDB-Hisar SF' }, { id: '19337', name: 'INDB-DLI Exp' },
-  { id: '79309', name: 'DADN-RTM DMU' }
+  { id: '11126', name: 'GWL-RTM Exp' }
 ].map(t => ({ ...t, path: ['INDB', 'FTD', 'BNG', 'RTM'] }));
 
 const ujnUpData = [
-  { id: '20916', name: 'INDB-Charlapalli' }, { id: '9324', name: 'INDB-Khadki' },
-  { id: '22944', name: 'INDB-Daund SF' }, { id: '12962', name: 'Avantika SF' },
-  { id: '19315', name: 'Veer Bhumi' }, { id: '12228', name: 'INDB-MMCT' },
-  { id: '20932', name: 'INDB-KCVL SF' }, { id: '19320', name: 'INDB-Veraval' },
-  { id: '19310', name: 'Shanti Exp' }
+  { id: '12228', name: 'INDB-MMCT' }, { id: '19320', name: 'INDB-Veraval' }
 ].map(t => ({ ...t, path: ['INDB', 'DWX', 'UJN', 'NAD', 'RTM'] }));
 
 const allTrainData = [...ftdDownData, ...ujnDownData, ...ftdUpData, ...ujnUpData];
+
+const systemAlerts = [
+  "[TMS] MN-101 Track Renewal in progress on RTM-NAD B2 (Down). Proceed with caution.",
+  "[SMMS] MN-104 Signal Interlocking verified at DWX-INDB B1 (Up).",
+  "[TDMS] Alert: MN-102 OHE Line Check scheduled for UJN-DWX B3 (Down) at 13:00.",
+  "[DEFECT-802] Rail Fracture reported at RTM-BNG B2 (Down). Caution Order Active.",
+  "[DEFECT-803] Weld Misalignment under review at UJN-DWX B3 (Down).",
+  "[COA] Control Office acknowledges clearance for Block BLK-401 (RTM-NAD B2).",
+];
 
 const MapDashboard = () => {
   const [stations] = useState([
@@ -67,9 +59,11 @@ const MapDashboard = () => {
   };
 
   const [trains, setTrains] = useState([]);
-  const [messages, setMessages] = useState(["[SYSTEM] Division Sector Grid Initialized."]);
+  const [messages, setMessages] = useState(["<span class='text-slate-600 font-semibold'>[SYSTEM]</span> <span class='text-slate-900 font-bold'>Division Sector Grid Initialized.</span>"]);
+  
+  const [isAutoScroll, setIsAutoScroll] = useState(true);
+  const terminalContainerRef = useRef(null);
   const prevOccupiedBlocksRef = useRef(new Set());
-  const terminalEndRef = useRef(null);
 
   const getOffsetCoordinates = (x1, y1, x2, y2, offset) => {
     const dx = x2 - x1;
@@ -108,6 +102,10 @@ const MapDashboard = () => {
         let newEvents = [];
         const currentOccupiedBlocks = new Set();
         
+        if (Math.random() > 0.98) {
+           newEvents.push(systemAlerts[Math.floor(Math.random() * systemAlerts.length)]);
+        }
+
         const updatedTrains = prevTrains.map(train => {
           let updatedTrain = { ...train };
 
@@ -134,7 +132,7 @@ const MapDashboard = () => {
               newEvents.push(`${train.id} ${train.name} entered block ${updatedTrain.currentBlockId}`);
             }
           } else {
-            let p = train.progress + 0.0005; // Speed drastically reduced
+            let p = train.progress + 0.0005;
             
             if (p >= 1.0) {
               const destStationId = train.path[train.segmentIndex + 1];
@@ -175,9 +173,17 @@ const MapDashboard = () => {
         if (newEvents.length > 0) {
           setMessages(prev => {
             const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
-            const formattedEvents = newEvents.map(e => `[${timestamp}] ${e}`);
+            const formattedEvents = newEvents.map(e => {
+                // Color Code styling for maximum visibility on slate-100 background
+                if (e.includes('EMPTY')) {
+                   return `<span class="text-slate-500 font-semibold">[${timestamp}] ${e}</span>`;
+                } else if (e.includes('[TMS]') || e.includes('[SMMS]') || e.includes('[TDMS]') || e.includes('[DEFECT]')) {
+                   return `<span class="text-slate-600 font-semibold">[${timestamp}]</span> <span class="text-[#e16f15] font-bold">${e}</span>`;
+                }
+                return `<span class="text-slate-600 font-semibold">[${timestamp}]</span> <span class="text-slate-900 font-bold">${e}</span>`;
+            });
             const updated = [...prev, ...formattedEvents];
-            return updated.length > 75 ? updated.slice(updated.length - 75) : updated;
+            return updated.length > 150 ? updated.slice(updated.length - 150) : updated;
           });
         }
 
@@ -189,8 +195,25 @@ const MapDashboard = () => {
   }, [trains.length, stations]);
 
   useEffect(() => {
-    terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (isAutoScroll && terminalContainerRef.current) {
+      terminalContainerRef.current.scrollTop = terminalContainerRef.current.scrollHeight;
+    }
+  }, [messages, isAutoScroll]);
+
+  const handleTerminalScroll = () => {
+    if (!terminalContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = terminalContainerRef.current;
+    
+    const isAtBottom = scrollHeight - scrollTop - clientHeight <= 50;
+    setIsAutoScroll(isAtBottom);
+  };
+
+  const handleSyncLatest = () => {
+    setIsAutoScroll(true);
+    if (terminalContainerRef.current) {
+      terminalContainerRef.current.scrollTop = terminalContainerRef.current.scrollHeight;
+    }
+  };
 
   const getStationCoordinates = (stationId) => {
     const station = stations.find(s => s.id === stationId);
@@ -210,28 +233,24 @@ const MapDashboard = () => {
   };
 
   return (
-    <div className="flex h-screen w-full bg-gray-50 p-4 font-sans gap-4">
-      <div className="flex w-3/4 flex-col overflow-hidden rounded-2xl bg-white shadow-xl border border-gray-200">
-        <div className="flex items-center justify-between bg-[#172b4d] px-6 py-4">
+    <div className="flex h-full w-full bg-slate-200 p-6 font-sans gap-6">
+      
+      {/* MAP SECTION */}
+      <div className="flex w-3/4 flex-col overflow-hidden rounded-2xl bg-white shadow-xl border-2 border-slate-400">
+        <div className="flex items-center justify-between bg-[#172b4d] px-6 py-4 border-b-2 border-slate-400">
           <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-extrabold text-white tracking-wide">NETWORK CONTROL</h1>
-            <span className="rounded-full bg-blue-500/20 px-3 py-1 text-xs font-bold text-blue-400 border border-blue-500/30">
-              BLOCK SIMULATION
+            <h1 className="text-xl font-extrabold text-white tracking-wide">NETWORK CONTROL</h1>
+            <span className="rounded-full bg-blue-500/20 px-3 py-1 text-xs font-bold text-blue-200 border border-blue-500/30">
+              LIVE SIMULATION
             </span>
           </div>
-          <Link 
-            to="/" 
-            className="rounded-md bg-[#fb7f1c] px-4 py-2 text-sm font-semibold text-white shadow-md transition-all hover:bg-[#e16f15]"
-          >
-            Sign Out
-          </Link>
         </div>
         
-        <div className="relative flex-grow bg-[#0a1120] overflow-hidden">
+        <div className="relative flex-grow bg-slate-100 overflow-hidden min-h-[500px]">
           <div 
-            className="absolute inset-0 opacity-20" 
+            className="absolute inset-0 opacity-50" 
             style={{ 
-              backgroundImage: 'linear-gradient(#1e3a8a 1px, transparent 1px), linear-gradient(90deg, #1e3a8a 1px, transparent 1px)', 
+              backgroundImage: 'linear-gradient(#cbd5e1 1px, transparent 1px), linear-gradient(90deg, #cbd5e1 1px, transparent 1px)', 
               backgroundSize: '40px 40px' 
             }}
           />
@@ -259,15 +278,15 @@ const MapDashboard = () => {
                     key={`tick-${track.id}-${i}`}
                     x1={cx + nx * -12} y1={cy + ny * -12} 
                     x2={cx + nx * 12} y2={cy + ny * 12}
-                    stroke="#475569" strokeWidth="2" strokeOpacity="0.8"
+                    stroke="#64748b" strokeWidth="2.5" strokeOpacity="0.8"
                   />
                 );
               }
 
               return (
                 <g key={track.id}>
-                  <line x1={upper.x1} y1={upper.y1} x2={upper.x2} y2={upper.y2} stroke="#1e3a8a" strokeWidth="2" />
-                  <line x1={lower.x1} y1={lower.y1} x2={lower.x2} y2={lower.y2} stroke="#1e3a8a" strokeWidth="2" />
+                  <line x1={upper.x1} y1={upper.y1} x2={upper.x2} y2={upper.y2} stroke="#172b4d" strokeWidth="3" />
+                  <line x1={lower.x1} y1={lower.y1} x2={lower.x2} y2={lower.y2} stroke="#172b4d" strokeWidth="3" />
                   {ticks}
                 </g>
               );
@@ -275,12 +294,12 @@ const MapDashboard = () => {
 
             {stations.map((station) => (
               <g key={station.id}>
-                <circle cx={station.cx} cy={station.cy} r="14" fill="#0f172a" stroke="#3b82f6" strokeWidth="2" />
-                <circle cx={station.cx} cy={station.cy} r="6" fill="#ffffff" />
-                <text x={station.cx} y={station.cy - 22} fill="#94a3b8" fontSize="14" fontWeight="600" textAnchor="middle">
+                <circle cx={station.cx} cy={station.cy} r="14" fill="#ffffff" stroke="#172b4d" strokeWidth="2.5" />
+                <circle cx={station.cx} cy={station.cy} r="5" fill="#fb7f1c" />
+                <text x={station.cx} y={station.cy - 22} fill="#172b4d" fontSize="14" fontWeight="800" textAnchor="middle">
                   {station.name}
                 </text>
-                <text x={station.cx} y={station.cy + 24} fill="#3b82f6" fontSize="11" fontWeight="bold" textAnchor="middle">
+                <text x={station.cx} y={station.cy + 24} fill="#64748b" fontSize="12" fontWeight="bold" textAnchor="middle">
                   {station.id}
                 </text>
               </g>
@@ -291,8 +310,8 @@ const MapDashboard = () => {
               return (
                 <g key={train.id} style={{ transition: 'none' }}>
                   <circle cx={pos.x} cy={pos.y} r="5" fill={train.state === 'STOPPED' ? '#ef4444' : '#fb7f1c'} />
-                  <rect x={pos.x + 8} y={pos.y - 8} width="40" height="16" fill="#172b4d" rx="3" stroke={train.state === 'STOPPED' ? '#ef4444' : '#fb7f1c'} strokeWidth="1" />
-                  <text x={pos.x + 28} y={pos.y + 3} fill="#ffffff" fontSize="9" fontWeight="bold" textAnchor="middle">
+                  <rect x={pos.x + 8} y={pos.y - 8} width="42" height="16" fill="#ffffff" rx="3" stroke={train.state === 'STOPPED' ? '#ef4444' : '#fb7f1c'} strokeWidth="1.5" />
+                  <text x={pos.x + 29} y={pos.y + 3} fill="#172b4d" fontSize="9" fontWeight="bold" textAnchor="middle">
                     {train.id}
                   </text>
                 </g>
@@ -302,17 +321,36 @@ const MapDashboard = () => {
         </div>
       </div>
 
-      <div className="flex w-1/4 flex-col overflow-hidden rounded-2xl bg-white shadow-xl border border-gray-200">
-        <div className="bg-[#172b4d] px-6 py-4">
-          <h2 className="text-lg font-bold text-white tracking-wide">SECTOR TERMINAL</h2>
+      {/* TERMINAL SECTION */}
+      <div className="flex w-1/4 flex-col overflow-hidden rounded-2xl bg-white shadow-xl border-2 border-slate-400">
+        
+        <div className="bg-[#172b4d] border-b-2 border-slate-400 px-6 py-4">
+          <h2 className="text-sm font-bold text-white tracking-wide uppercase">Sector Event Terminal</h2>
         </div>
-        <div className="flex-grow overflow-y-auto bg-gray-900 p-4 font-mono text-xs leading-relaxed text-[#00ff41]">
-          {messages.map((msg, index) => (
-            <div key={index} className={`mb-2 break-words border-b border-gray-800 pb-1 ${msg.includes('EMPTY') ? 'text-gray-400' : 'text-[#00ff41]'}`}>
-              {msg}
-            </div>
-          ))}
-          <div ref={terminalEndRef} />
+        
+        <div className="relative flex-grow flex flex-col bg-slate-100 max-h-[calc(100vh-8rem)]">
+          <div 
+            ref={terminalContainerRef}
+            onScroll={handleTerminalScroll}
+            className="flex-grow overflow-y-auto p-4 font-mono text-xs leading-relaxed"
+          >
+            {messages.map((msg, index) => (
+              <div 
+                key={index} 
+                className="mb-2 break-words border-b border-slate-400 pb-2"
+                dangerouslySetInnerHTML={{ __html: msg }}
+              />
+            ))}
+          </div>
+
+          {!isAutoScroll && (
+            <button
+              onClick={handleSyncLatest}
+              className="absolute bottom-4 right-4 bg-[#172b4d] hover:bg-[#fb7f1c] text-white text-xs font-bold py-2 px-4 rounded-full shadow-lg border border-slate-400 transition-colors flex items-center gap-2"
+            >
+              <span>↓</span> Sync to Latest
+            </button>
+          )}
         </div>
       </div>
     </div>

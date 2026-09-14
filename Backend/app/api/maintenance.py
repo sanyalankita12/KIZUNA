@@ -209,3 +209,72 @@ def get_maintenance_task(
         )
 
     return task
+
+@router.patch(
+    "/{task_id}",
+    response_model=MaintenanceTaskResponse
+)
+def update_maintenance_task(
+    task_id: int,
+    payload: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    task = (
+        db.query(MaintenanceTask)
+        .filter(MaintenanceTask.id == task_id)
+        .first()
+    )
+
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Maintenance task not found"
+        )
+
+    if "status" in payload:
+        allowed_statuses = {
+            "Pending",
+            "In Progress",
+            "Completed",
+        }
+
+        if payload["status"] not in allowed_statuses:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid status"
+            )
+
+        task.status = payload["status"]
+
+    db.commit()
+    db.refresh(task)
+
+    return task
+
+
+@router.delete(
+    "/{task_id}",
+    status_code=status.HTTP_204_NO_CONTENT
+)
+def delete_maintenance_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    task = (
+        db.query(MaintenanceTask)
+        .filter(MaintenanceTask.id == task_id)
+        .first()
+    )
+
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Maintenance task not found"
+        )
+
+    db.delete(task)
+    db.commit()
+
+    return None

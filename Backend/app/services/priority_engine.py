@@ -51,3 +51,40 @@ def calculate_priority_score(
     )
 
     return score
+
+def calculate_defect_priority_score(
+    criticality: str,
+    severity: str,
+    train_impact: int,
+    overdue_days: int,
+) -> int:
+
+    criticality_score = CRITICALITY_WEIGHT.get(
+        criticality,
+        1
+    )
+
+    severity_score = SEVERITY_WEIGHT.get(
+        severity,
+        1
+    )
+
+    # Prevent extremely old defects from
+    # dominating the entire schedule.
+    overdue_bonus = min(
+        max(overdue_days, 0),
+        10
+    )
+
+    impact_score = max(
+        train_impact,
+        1
+    )
+
+    score = (
+        criticality_score
+        * severity_score
+        * (impact_score + overdue_bonus)
+    )
+
+    return score

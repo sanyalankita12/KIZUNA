@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime,date
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -51,6 +51,7 @@ class MaintenanceTaskResponse(BaseModel):
     duration_minutes: int
     status: str
     created_at: datetime
+    planned_date: date | None
 
     class Config:
         from_attributes = True

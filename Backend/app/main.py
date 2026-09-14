@@ -4,8 +4,17 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api import admin, trains, user , maintenance,optimizer
-from .auth import hash_password
+from .api import (
+    admin,
+    trains,
+    user,
+    maintenance,
+    optimizer,
+    defects,
+    corridor_availability,
+    planning,
+)
+
 from .database import Base, SessionLocal, engine
 from .models import Admin
 
@@ -30,7 +39,9 @@ app.include_router(user.router)
 app.include_router(trains.router)
 app.include_router(maintenance.router)
 app.include_router(optimizer.router)
-
+app.include_router(defects.router)
+app.include_router(corridor_availability.router)
+app.include_router(planning.router)
 
 @app.on_event("startup")
 def seed_default_admin():

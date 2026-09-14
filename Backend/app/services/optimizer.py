@@ -1,8 +1,11 @@
 from ortools.sat.python import cp_model
 
+from .joint_blocks import tasks_can_share_joint_block
+
 
 def time_to_minutes(value):
     """Convert a Python time object to minutes after midnight."""
+
     if value is None:
         return None
 
@@ -27,17 +30,24 @@ def normalize_section(section):
     return "-".join(sorted(parts))
 
 
-def optimize_tasks(tasks, blocked_windows):
+def optimize_tasks(
+    tasks,
+    blocked_windows,
+    available_windows,
+):
     """
-    Schedule maintenance tasks while avoiding:
+    Schedule maintenance tasks while considering:
 
     1. Train occupancy windows
-    2. Overlapping maintenance on the same railway section
+    2. Corridor availability windows
+    3. Conflicts between incompatible maintenance tasks
+    4. Joint multi-department maintenance blocks
 
     Optimization objectives:
 
     1. Schedule high-priority tasks earlier
     2. Prefer completing the complete maintenance plan earlier
+    3. Encourage compatible departments to work together
     """
 
     model = cp_model.CpModel()
@@ -61,7 +71,7 @@ def optimize_tasks(tasks, blocked_windows):
         start = model.NewIntVar(
             0,
             HORIZON - duration,
-            f"start_{task_id}"
+            f"start_{task_id}",
         )
 
         # Decision variable:
@@ -69,7 +79,7 @@ def optimize_tasks(tasks, blocked_windows):
         end = model.NewIntVar(
             duration,
             HORIZON,
-            f"end_{task_id}"
+            f"end_{task_id}",
         )
 
         # Duration must remain fixed.
@@ -80,12 +90,14 @@ def optimize_tasks(tasks, blocked_windows):
         task_variables[task_id] = {
             "start": start,
             "end": end,
-            "section": normalize_section(task["section"]),
+            "section": normalize_section(
+                task["section"]
+            ),
         }
 
     # ---------------------------------------------------------
     # HARD CONSTRAINT 1:
-    # Maintenance cannot overlap train movement.
+    # MAINTENANCE CANNOT OVERLAP TRAIN MOVEMENT
     # ---------------------------------------------------------
 
     for task in tasks:
@@ -97,19 +109,18 @@ def optimize_tasks(tasks, blocked_windows):
 
         windows = blocked_windows.get(
             task_id,
-            []
+            [],
         )
 
         for index, window in enumerate(windows):
 
-            # Option A:
-            # Maintenance finishes before train arrives.
+            # Maintenance must either finish before
+            # train occupancy starts...
             before = model.NewBoolVar(
                 f"before_{task_id}_{index}"
             )
 
-            # Option B:
-            # Maintenance starts after train leaves.
+            # ...or start after train occupancy ends.
             after = model.NewBoolVar(
                 f"after_{task_id}_{index}"
             )
@@ -122,20 +133,73 @@ def optimize_tasks(tasks, blocked_windows):
                 start >= window["end_minute"]
             ).OnlyEnforceIf(after)
 
-            # At least one option must be true.
-            #
-            # Therefore:
-            # maintenance BEFORE train
-            # OR
-            # maintenance AFTER train
             model.AddBoolOr(
                 [before, after]
             )
 
     # ---------------------------------------------------------
     # HARD CONSTRAINT 2:
-    # Tasks on the SAME railway section
-    # cannot overlap.
+    # TASK MUST FIT INSIDE A VALID
+    # CORRIDOR AVAILABILITY WINDOW
+    # ---------------------------------------------------------
+
+    for task in tasks:
+
+        task_id = task["id"]
+
+        start = task_variables[task_id]["start"]
+        end = task_variables[task_id]["end"]
+
+        corridor_windows = available_windows.get(
+            task_id,
+            [],
+        )
+
+        # No available corridor window means the task
+        # cannot be scheduled.
+        if not corridor_windows:
+
+            model.Add(
+                start >= HORIZON + 1
+            )
+
+        else:
+
+            fits_in_window = []
+
+            for index, window in enumerate(
+                corridor_windows
+            ):
+
+                fits = model.NewBoolVar(
+                    f"fits_corridor_{task_id}_{index}"
+                )
+
+                # Task starts after the available window begins.
+                model.Add(
+                    start >= window["available_from"]
+                ).OnlyEnforceIf(fits)
+
+                # Task finishes before the available window ends.
+                model.Add(
+                    end <= window["available_to"]
+                ).OnlyEnforceIf(fits)
+
+                fits_in_window.append(fits)
+
+            # The task must fit completely inside
+            # at least one available corridor window.
+            model.AddBoolOr(
+                fits_in_window
+            )
+
+    # ---------------------------------------------------------
+    # HARD CONSTRAINT 3:
+    # INCOMPATIBLE TASKS ON THE SAME PHYSICAL SECTION
+    # CANNOT OVERLAP.
+    #
+    # COMPATIBLE MULTI-DEPARTMENT TASKS ARE ALLOWED
+    # TO SHARE A JOINT BLOCK.
     # ---------------------------------------------------------
 
     for i in range(len(tasks)):
@@ -158,6 +222,14 @@ def optimize_tasks(tasks, blocked_windows):
             if section_a != section_b:
                 continue
 
+            # Compatible departments may share
+            # the same corridor block.
+            if tasks_can_share_joint_block(
+                task_a,
+                task_b,
+            ):
+                continue
+
             start_a = task_variables[
                 task_a["id"]
             ]["start"]
@@ -174,14 +246,12 @@ def optimize_tasks(tasks, blocked_windows):
                 task_b["id"]
             ]["end"]
 
-            # Option A:
-            # Task A finishes before Task B starts.
+            # Either Task A finishes before Task B...
             a_before_b = model.NewBoolVar(
                 f"a_before_b_{task_a['id']}_{task_b['id']}"
             )
 
-            # Option B:
-            # Task B finishes before Task A starts.
+            # ...or Task B finishes before Task A.
             b_before_a = model.NewBoolVar(
                 f"b_before_a_{task_a['id']}_{task_b['id']}"
             )
@@ -194,14 +264,10 @@ def optimize_tasks(tasks, blocked_windows):
                 end_b <= start_a
             ).OnlyEnforceIf(b_before_a)
 
-            # At least one ordering must be true.
-            #
-            # Therefore two maintenance tasks on the
-            # same railway section cannot overlap.
             model.AddBoolOr(
                 [
                     a_before_b,
-                    b_before_a
+                    b_before_a,
                 ]
             )
 
@@ -209,21 +275,22 @@ def optimize_tasks(tasks, blocked_windows):
     # OBJECTIVE
     # ---------------------------------------------------------
 
-    # Makespan represents the time at which the
-    # entire maintenance schedule finishes.
+    # Makespan represents when the entire maintenance
+    # schedule finishes.
     makespan = model.NewIntVar(
         0,
         HORIZON,
-        "makespan"
+        "makespan",
     )
 
     for task in tasks:
 
         task_id = task["id"]
-        end = task_variables[task_id]["end"]
 
-        # Makespan must be at least as late as
-        # every maintenance task's end time.
+        end = task_variables[
+            task_id
+        ]["end"]
+
         model.Add(
             makespan >= end
         )
@@ -243,29 +310,82 @@ def optimize_tasks(tasks, blocked_windows):
             task_id
         ]["start"]
 
-        # Higher priority means a larger penalty
-        # for starting late.
+        # Higher priority = larger penalty for
+        # being scheduled late.
         objective_terms.append(
             start * priority
         )
 
     # ---------------------------------------------------------
+    # JOINT BLOCK OBJECTIVE
+    # ---------------------------------------------------------
+
+    # For compatible tasks on the same section,
+    # minimize the distance between their start times.
+    #
+    # This does not force them to start together,
+    # but encourages CP-SAT to place them within
+    # the same maintenance block whenever possible.
+
+    joint_block_terms = []
+
+    for i in range(len(tasks)):
+
+        for j in range(i + 1, len(tasks)):
+
+            task_a = tasks[i]
+            task_b = tasks[j]
+
+            if not tasks_can_share_joint_block(
+                task_a,
+                task_b,
+            ):
+                continue
+
+            start_a = task_variables[
+                task_a["id"]
+            ]["start"]
+
+            start_b = task_variables[
+                task_b["id"]
+            ]["start"]
+
+            start_difference = model.NewIntVar(
+                0,
+                HORIZON,
+                f"joint_difference_{task_a['id']}_{task_b['id']}",
+            )
+
+            model.AddAbsEquality(
+                start_difference,
+                start_a - start_b,
+            )
+
+            joint_block_terms.append(
+                start_difference
+            )
+
+    # ---------------------------------------------------------
     # FINAL OBJECTIVE
     # ---------------------------------------------------------
 
-    # CP-SAT tries to minimize:
+    # CP-SAT minimizes:
     #
-    #     priority-weighted start times
-    #              +
-    #     overall schedule completion time
+    # 1. Priority-weighted start times
+    # 2. Overall completion time
+    # 3. Distance between compatible task start times
     #
-    # This encourages:
-    # 1. Important tasks to happen earlier
-    # 2. The entire maintenance plan to finish sooner
+    # Therefore Kizuna tries to:
+    #
+    # - Schedule urgent/high-priority work earlier
+    # - Finish the overall plan earlier
+    # - Coordinate compatible departments into
+    #   joint maintenance blocks
 
     model.Minimize(
         sum(objective_terms)
         + makespan * 10
+        + sum(joint_block_terms) * 5
     )
 
     # ---------------------------------------------------------
@@ -280,8 +400,7 @@ def optimize_tasks(tasks, blocked_windows):
 
     status = solver.Solve(model)
 
-    # If no feasible solution exists,
-    # return None to the API layer.
+    # No feasible solution.
     if status not in (
         cp_model.OPTIMAL,
         cp_model.FEASIBLE,
@@ -310,11 +429,15 @@ def optimize_tasks(tasks, blocked_windows):
             "task_id": task_id,
             "scheduled_start_minute": start,
             "scheduled_end_minute": end,
-            "duration_minutes": task["duration_minutes"],
-            "priority_score": task["priority_score"],
+            "duration_minutes": (
+                task["duration_minutes"]
+            ),
+            "priority_score": (
+                task["priority_score"]
+            ),
         })
 
-    # Sort the final plan chronologically.
+    # Sort final plan chronologically.
     results.sort(
         key=lambda x: x["scheduled_start_minute"]
     )

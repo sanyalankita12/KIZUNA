@@ -1,533 +1,374 @@
-# Kizuna
+# KIZUNA
+### AI-Powered Automatic Block Planning for Maximizing Asset Availability in Railway Operations
 
-## AI-Powered Automatic Block Planning to Maximize Asset Availability for Train Operations
-
-**Smart India Hackathon 2026 — SIH26027**  
-**Ministry of Railways | Software | Transportation & Logistics**
 
 ---
 
-## Overview
+## 1. Overview
 
-Kizuna is an AI-assisted railway maintenance planning platform designed to optimize maintenance block scheduling while minimizing conflicts with train operations.
+**KIZUNA** is an intelligent railway maintenance and block-planning platform designed to coordinate maintenance activities with train operations.
 
-The system combines maintenance requirements, asset defects, railway timetable data, train impact, corridor availability, departmental compatibility, and constraint-based optimization into a unified planning workflow.
+In conventional railway operations, maintenance requests may originate independently from different departments such as Track, Signal, Electrical, and Engineering. When these activities are planned independently, overlapping work requirements can result in repeated traffic blocks, operational disruption, under-utilization of maintenance windows, conflicts with train movements, and difficulty in prioritizing critical work.
 
-Instead of planning maintenance activities independently across departments, Kizuna identifies opportunities to coordinate compatible activities and consolidate them into joint maintenance blocks.
+KIZUNA addresses this challenge by transforming independent maintenance requirements into a coordinated, data-driven planning process.
 
-The platform supports:
+The platform combines:
 
-- Daily block optimization
-- Joint multi-department maintenance blocks
-- Weekly maintenance planning
-- Monthly maintenance planning
-- Maintenance priority scoring
-- Asset defect management
-- Train impact analysis
-- Corridor availability analysis
-- Role-based administration
+- Maintenance task management
+- Defect intelligence
+- Train timetable analysis
+- Section occupancy analysis
+- Priority scoring
+- ML-based maintenance risk intelligence
+- Conflict detection
+- Automated block planning
+- Constraint-based optimization
+- Daily, weekly, and monthly planning
 
----
-
-## Problem Statement
-
-Railway maintenance activities are performed by multiple departments such as Track, Signal, and Electrical.
-
-When these activities are planned independently, multiple departments may compete for the same railway corridor and maintenance windows.
-
-This can result in:
-
-- Conflicting maintenance activities
-- Repeated blocking of the same corridor
-- Under-utilization of available maintenance windows
-- Increased asset downtime
-- Higher operational impact
-- Poor coordination between departments
-
-The objective of Kizuna is to intelligently coordinate maintenance activities while considering train operations, corridor availability, task priority, and departmental compatibility.
+The objective is to maximize **asset availability while minimizing operational disruption**.
 
 ---
 
-## Solution
+## 2. Problem Statement
 
-Kizuna converts independent maintenance requirements into a coordinated railway-aware optimization problem.
+Railway maintenance activities are highly dependent on the availability of track sections and operational windows.
+
+A maintenance activity may be technically feasible but operationally difficult if:
+
+- Multiple trains occupy the section during the requested period.
+- Another department requires the same section.
+- The available maintenance window is too short.
+- The task has a high operational impact.
+- Critical maintenance work is competing with lower-impact activities.
+
+Traditional planning approaches often treat these requests as isolated activities.
+
+KIZUNA introduces a coordinated planning layer that considers **maintenance requirements and train operations together**.
+
+---
+
+## 3. Proposed Solution
+
+KIZUNA follows a unified planning pipeline:
 
 ```text
-TMS / SMMS / TDMS / COA
-          |
-          v
-   Data Normalization
-          |
-          v
-      PostgreSQL
-          |
-          v
-Maintenance + Defects
-          |
-          v
-    Priority Engine
-          |
-          v
-      Train Impact
-          |
-          v
- Corridor Availability
-          |
-          v
- Joint Block Builder
-          |
-          v
-     CP-SAT Solver
-          |
-          v
- Optimized Block Plan
-          |
-     +----+----+
-     |         |
-     v         v
-  Weekly    Monthly
-  Planning  Planning
-     |         |
-     +----+----+
-          |
-          v
-    Kizuna Dashboard
+TMS / SMMS / TDMS
+        |
+        v
+Data Normalization
+        |
+        v
+Railway Operational Database
+        |
+        +-- Maintenance Tasks
+        +-- Defects
+        +-- Train Timetable
+        +-- Train Stops
+        +-- Corridor Availability
+        |
+        v
+Priority & Risk Intelligence
+        |
+        v
+Train Impact Analysis
+        |
+        v
+Conflict Detection
+        |
+        v
+Joint Block Builder
+        |
+        v
+CP-SAT Optimization
+        |
+        v
+Daily / Weekly / Monthly Plans
+        |
+        v
+KIZUNA Dashboard
 ```
+
+The system moves from **individual maintenance requests** to **coordinated operational blocks**.
 
 ---
 
-# Key Features
+## 4. Key Capabilities
 
-## 1. Maintenance Management
+### 4.1 Maintenance Management
 
-Kizuna allows maintenance teams to create and manage maintenance tasks using:
+Maintenance teams can create, monitor, update, and manage maintenance activities.
 
-- Section
+Each task can contain:
+
+- Maintenance title
+- Description
+- Railway section
 - Department
 - Criticality
 - Severity
 - Urgency
 - Duration
-- Description
 - Status
+- Planned date
 
-Maintenance tasks can be:
+### 4.2 Defect Management
 
-- Created
-- Viewed
-- Prioritized
-- Updated
-- Completed
-- Deleted
+KIZUNA integrates railway defect information from operational sources.
 
----
+Defects are associated with:
 
-## 2. Explainable Priority Engine
-
-Kizuna calculates maintenance priority using an explainable weighted model.
-
-```text
-Priority Score =
-Criticality × Severity × Urgency × Train Impact
-```
-
-Each input factor is converted into a numerical weight.
-
-For example:
-
-```text
-Criticality = 3
-Severity = 3
-Urgency = 3
-Train Impact = 20
-
-Priority Score
-= 3 × 3 × 3 × 20
-= 540
-```
-
-The prototype categorizes scores as:
-
-| Score | Priority |
-|---:|---|
-| >= 400 | High |
-| 300–399 | Medium |
-| < 300 | Low |
-
-The thresholds are configurable and can be calibrated using historical railway maintenance data.
-
-### ML Approach
-
-Production historical labelled maintenance data was not available for the prototype.
-
-Therefore, Kizuna currently uses an explainable weighted baseline rather than claiming a trained production ML model.
-
-The priority module is designed to be modular so that a trained ML risk model can replace or augment the current approach when sufficient historical data becomes available.
-
----
-
-## 3. Defect Management
-
-Kizuna supports asset defect management using:
-
-- Asset ID
-- Asset Type
-- Railway Section
-- Description
-- Source System
+- Asset
+- Asset type
+- Railway section
+- Source system
 - Severity
 - Criticality
+- Reporting time
+- Due date
 - Status
 
-Example:
+### 4.3 Priority Intelligence
 
-```text
-Asset ID: SIG-NAD-002
-Asset Type: Signal
-Section: NAD-UJN
-Severity: High
-Criticality: High
-Status: Open
-```
+KIZUNA calculates maintenance priority using multiple operational factors:
 
-Defects can be used as additional maintenance planning and prioritization inputs.
-
----
-
-## 4. Train Timetable Integration
-
-Kizuna uses railway timetable and train-stop data to understand train movement across railway sections.
-
-The prototype dataset contains:
-
-```text
-Stations      : 7
-Trains        : 42
-Train Stops   : 188
-```
-
-Train-stop information is used to determine section occupancy and identify trains that may be affected by maintenance activity.
-
-This makes maintenance scheduling railway-operation aware rather than assigning arbitrary maintenance slots.
-
----
-
-## 5. Train Impact Analysis
-
-For every maintenance section, Kizuna calculates the number of scheduled trains potentially affected by blocking that section.
-
-Example prototype results:
-
-```text
-RTM-NAD → 20 trains
-RTM-BNG → 22 trains
-NAD-UJN → 20 trains
-```
-
-Train impact is then incorporated into the priority engine.
-
-This allows maintenance tasks with greater operational impact to receive stronger scheduling priority.
-
----
-
-## 6. Corridor Availability
-
-Kizuna derives feasible maintenance windows from train occupancy.
-
-For example:
-
-```text
-RTM-NAD
-
-Available Window:
-07:48 – 12:45
-```
-
-The optimization engine schedules maintenance activities inside feasible windows while avoiding known train occupancy periods.
-
----
-
-# 7. Constraint-Based Optimization
-
-The core scheduling engine uses:
-
-**Google OR-Tools CP-SAT**
-
-Railway block planning is a constraint scheduling problem because multiple operational and maintenance constraints must be satisfied simultaneously.
-
-The optimizer considers:
-
-- Maintenance priority
+- Criticality
+- Severity
+- Urgency
 - Train impact
-- Train occupancy
-- Corridor availability
+- Failure risk
+- Overdue risk
+- Traffic density
+- Maintenance-window scarcity
+- Duration impact
+
+The resulting score is translated into:
+
+```text
+Critical
+High
+Medium
+Low
+```
+
+The contributing factors are exposed to make the prioritization explainable rather than a black-box score.
+
+---
+
+## 5. ML-Based Maintenance Risk Intelligence
+
+KIZUNA includes a separate ML layer for maintenance risk intelligence.
+
+The current implementation uses **unsupervised anomaly detection** because the available railway dataset does not contain sufficient historical failure labels for reliable supervised failure prediction.
+
+The ML layer uses operational characteristics such as:
+
+- Maintenance criticality
+- Severity
+- Urgency
+- Train impact
+- Overdue duration
 - Task duration
-- Same-section conflicts
-- Department compatibility
-- Joint block opportunities
+- Operational characteristics
 
----
+The system generates:
 
-## Hard Constraints
+- ML risk score
+- Risk level
+- Model confidence
+- Anomaly indication
+- ML model information
 
-### Corridor Availability
+### Why anomaly detection?
 
-Maintenance activities must be scheduled inside feasible corridor availability windows.
-
-### Task Duration
-
-Every task must receive its required maintenance duration.
-
-### Train Occupancy
-
-Maintenance cannot be scheduled over unavailable train-occupied periods.
-
-### Same-Section Conflicts
-
-Incompatible maintenance activities on the same physical section cannot overlap.
-
-### Department Compatibility
-
-Compatible departments may be considered for joint execution when the configured compatibility rules permit it.
-
----
-
-# 8. Joint Maintenance Blocks
-
-One of Kizuna's key features is coordinated multi-department maintenance.
-
-When compatible maintenance activities:
-
-1. Belong to the same physical railway section
-2. Belong to compatible departments
-3. Fit within the same feasible maintenance window
-
-the optimizer can consolidate them into a joint maintenance block.
-
-Example:
+The available maintenance dataset does not provide reliable historical labels such as:
 
 ```text
-Section: RTM-NAD
-
-Track Maintenance
-        +
-Signal Maintenance
-        =
-Joint Block JB-001
+Task -> Failure occurred / Failure did not occur
 ```
 
-Example prototype result:
+Training a supervised failure model without reliable labels can produce misleading results.
+
+KIZUNA therefore uses ML as a **risk intelligence and anomaly-detection layer**, while keeping the operational priority engine explainable.
+
+---
+
+## 6. Train Impact Analysis
+
+KIZUNA analyzes train movement data to determine how many trains are affected by a maintenance section.
+
+The system uses:
+
+- Train master data
+- Train stop sequences
+- Arrival times
+- Departure times
+- Section transitions
+
+For each requested railway section, KIZUNA identifies trains occupying that section and calculates the associated operational impact.
+
+This information is used by both the priority and planning layers.
+
+---
+
+## 7. Maintenance Window Intelligence
+
+Maintenance windows are analyzed against train occupancy.
+
+The system identifies available periods between train movements and evaluates whether maintenance activities can fit within those windows.
+
+Window availability influences operational priority and block planning.
+
+This allows KIZUNA to answer:
+
+> **When can this maintenance activity be executed with minimum operational disruption?**
+
+---
+
+## 8. Conflict Detection
+
+Before planning a maintenance task, KIZUNA can identify operational conflicts.
+
+Potential conflicts include:
+
+- Train movement conflicts
+- Overlapping maintenance activities
+- Section conflicts
+- Insufficient maintenance windows
+- Operationally constrained periods
+
+This helps planners identify conflicts before execution.
+
+---
+
+## 9. Joint Block Planning
+
+One of KIZUNA's core concepts is **joint block planning**.
+
+Instead of treating maintenance activities independently:
 
 ```text
-JB-001
-
-Section:
-RTM-NAD
-
-Time:
-02:25 – 02:55
-
-Departments:
-Signal + Track
+Task A -> Block
+Task B -> Block
+Task C -> Block
 ```
 
-This reduces repeated blocking of the same corridor and improves coordination between maintenance departments.
-
----
-
-# 9. Department Compatibility
-
-Kizuna uses a configurable department compatibility layer.
-
-Current prototype configuration:
-
-```python
-COMPATIBLE_DEPARTMENTS = {
-    frozenset({"Track", "Signal"}),
-    frozenset({"Track", "Electrical"}),
-    frozenset({"Signal", "Electrical"}),
-}
-```
-
-The compatibility matrix is configurable according to railway operational procedures, engineering rules, and safety requirements.
-
-The prototype does not assume that every combination of maintenance activities is operationally safe by default.
-
----
-
-# 10. Physical Section Normalization
-
-Railway sections may be represented in both directions.
-
-For example:
+KIZUNA identifies activities that can potentially be coordinated:
 
 ```text
-RTM-NAD
-NAD-RTM
+Task A --+
+Task B --+--> Joint Operational Block
+Task C --+
 ```
 
-represent the same physical railway corridor.
+This enables multiple compatible activities to be performed within a coordinated maintenance window.
 
-Kizuna normalizes bidirectional sections so that:
-
-- Conflict detection
-- Joint block generation
-- Corridor-level scheduling
-
-operate on the same physical section.
-
-This prevents the system from incorrectly treating opposite-direction representations as independent corridors.
+The result is reduced repetition of traffic blocks and better utilization of available operational windows.
 
 ---
 
-# 11. Weekly Planning
+## 10. Constraint-Based Optimization
 
-Kizuna supports a seven-day maintenance planning horizon.
+KIZUNA uses **Google OR-Tools CP-SAT** for constraint-based planning.
 
-The weekly planner distributes pending maintenance activities across:
+The optimization layer considers operational constraints such as:
+
+- Maintenance duration
+- Section availability
+- Train occupancy
+- Task conflicts
+- Planning windows
+- Task compatibility
+- Operational priorities
+
+The optimizer searches for feasible coordinated schedules rather than simply sorting maintenance tasks.
+
+---
+
+## 11. Planning Horizons
+
+KIZUNA supports multiple planning horizons.
+
+### Daily Planning
+Used for immediate operational maintenance decisions.
+
+### Weekly Planning
+Used to coordinate maintenance activities across the upcoming operating week.
+
+### Monthly Planning
+Used for broader maintenance planning and resource visibility.
+
+---
+
+## 12. System Architecture
 
 ```text
-7 Days
-```
-
-The generated plan includes:
-
-- Planning date
-- Number of tasks
-- Total duration
-- Assigned tasks
-- Department
-- Section
-- Status
-
----
-
-# 12. Monthly Planning
-
-Kizuna also supports a 30-day maintenance planning horizon.
-
-The monthly planner distributes pending maintenance activities across:
-
-```text
-30 Days
-```
-
-This provides higher-level workload planning in addition to detailed block-level optimization.
-
----
-
-# 13. Admin Portal
-
-Kizuna includes a role-based administration layer.
-
-## User Management
-
-Administrators can:
-
-- View users
-- Create users
-- Delete users
-- Monitor user accounts
-
-## Department Monitoring
-
-Department-level maintenance information can be monitored for:
-
-- Track
-- Signal
-- Electrical
-
-## Railway Network
-
-Administrators can inspect railway network and timetable data.
-
-## Data Management
-
-Administrators can monitor maintenance and planning data.
-
-## System Status
-
-The admin portal provides backend health and system status information.
-
----
-
-# System Architecture
-
-```text
-                    +----------------------+
-                    | Railway Data Sources |
-                    +----------------------+
-                    | TMS                  |
-                    | SMMS                 |
-                    | TDMS                 |
-                    | COA                  |
-                    +----------+-----------+
+                    +---------------------+
+                    | Railway Data Sources|
+                    | TMS / SMMS / TDMS   |
+                    +----------+----------+
                                |
                                v
-                    +----------------------+
-                    | Data Normalization   |
-                    +----------+-----------+
+                    +---------------------+
+                    | Data Normalization  |
+                    +----------+----------+
                                |
                                v
-                    +----------------------+
-                    |      PostgreSQL      |
-                    +----------+-----------+
+                    +---------------------+
+                    | PostgreSQL Database |
+                    +----------+----------+
                                |
-              +----------------+----------------+
-              |                                 |
-              v                                 v
-     +------------------+             +------------------+
-     | Maintenance Data |             | Defect Data      |
-     +--------+---------+             +--------+---------+
-              |                                |
-              +----------------+---------------+
+             +-----------------+-----------------+
+             |                 |                 |
+             v                 v                 v
+       Maintenance          Defects          Train Data
+             |                 |                 |
+             +-----------------+-----------------+
                                |
                                v
-                    +----------------------+
-                    |    Priority Engine   |
-                    +----------+-----------+
+                    +---------------------+
+                    | Priority Engine     |
+                    +----------+----------+
                                |
                                v
-                    +----------------------+
-                    |     Train Impact     |
-                    +----------+-----------+
+                    +---------------------+
+                    | ML Risk Intelligence|
+                    +----------+----------+
                                |
                                v
-                    +----------------------+
-                    | Corridor Availability|
-                    +----------+-----------+
+                    +---------------------+
+                    | Train Impact Engine |
+                    +----------+----------+
                                |
                                v
-                    +----------------------+
-                    |  Joint Block Builder |
-                    +----------+-----------+
+                    +---------------------+
+                    | Conflict Detection  |
+                    +----------+----------+
                                |
                                v
-                    +----------------------+
-                    |     CP-SAT Solver    |
-                    +----------+-----------+
+                    +---------------------+
+                    | Joint Block Builder |
+                    +----------+----------+
                                |
                                v
-                    +----------------------+
-                    | Optimized Block Plan |
-                    +----------+-----------+
-                               |
-                   +-----------+-----------+
-                   |                       |
-                   v                       v
-           Weekly Planning        Monthly Planning
-                   |                       |
-                   +-----------+-----------+
+                    +---------------------+
+                    | CP-SAT Optimizer    |
+                    +----------+----------+
                                |
                                v
-                    +----------------------+
-                    |    Kizuna React UI   |
-                    +----------------------+
+                    +---------------------+
+                    | Planning Engine      |
+                    | Daily/Weekly/Monthly |
+                    +----------+----------+
+                               |
+                               v
+                    +---------------------+
+                    | KIZUNA Dashboard    |
+                    +---------------------+
 ```
 
 ---
 
-# Technology Stack
+## 13. Technology Stack
 
 | Layer | Technology |
 |---|---|
@@ -536,28 +377,31 @@ The admin portal provides backend health and system status information.
 | Styling | Tailwind CSS |
 | Backend | FastAPI |
 | Language | Python |
-| Database | PostgreSQL |
 | ORM | SQLAlchemy |
+| Database | PostgreSQL |
 | Optimization | Google OR-Tools CP-SAT |
 | Authentication | JWT |
 | Password Security | bcrypt |
-| Data | Railway timetable and maintenance datasets |
+| ML | Python-based anomaly/risk intelligence |
+| Data | Railway operational CSV datasets |
 
 ---
 
-# API Architecture
+## 14. Backend API
 
-## Railway Data
+KIZUNA exposes REST APIs through FastAPI.
 
-```http
+### Railway Data
+
+```text
 GET /api/trains/stations
 GET /api/trains/trains
 GET /api/trains/train-stops
 ```
 
-## Maintenance
+### Maintenance
 
-```http
+```text
 GET    /api/maintenance
 POST   /api/maintenance
 GET    /api/maintenance/priorities
@@ -567,475 +411,331 @@ DELETE /api/maintenance/{task_id}
 GET    /api/maintenance/{task_id}/conflicts
 ```
 
-## Defects
+### Defects
 
-```http
+```text
 GET  /api/defects
-POST /api/defects
 GET  /api/defects/priorities
+POST /api/defects
 ```
 
-## Corridor Availability
+### Planning
 
-```http
-GET /api/corridor-availability/{section_from}/{section_to}
-```
-
-## Optimization
-
-```http
+```text
 POST /api/optimizer/run
-```
-
-## Planning
-
-```http
 POST /api/planning/weekly
 POST /api/planning/monthly
 GET  /api/planning/tasks
 ```
 
-## Authentication
+### Scenario Analysis
 
-```http
-POST /api/admin/login
-GET  /api/admin/me
+```text
+POST /api/scenario/simulate
 ```
 
-## Administration
+### Administration
 
-```http
+```text
+POST   /api/admin/login
+GET    /api/admin/me
 GET    /api/admin/users
 POST   /api/admin/users
 DELETE /api/admin/users/{user_id}
 GET    /api/admin/department-data
 ```
 
-## Health
+### Health
 
-```http
+```text
 GET /api/health
 ```
 
 ---
 
-# User Interface
+## 15. Dashboard Modules
 
-Kizuna provides a dashboard-oriented interface designed around the railway maintenance planning workflow.
+### User Dashboard
 
-The primary workflow is:
+- Dashboard
+- Network Control
+- Maintenance
+- Predictive Maintenance
+- Defects
+- Train Movements
+- Block Planning
+- Optimization
+- Plan History
 
-```text
-Dashboard
-    ↓
-Maintenance
-    ↓
-Defects
-    ↓
-Train Movements
-    ↓
-Block Planning
-    ↓
-Optimization
-    ↓
-Weekly / Monthly Planning
-```
+### Admin Dashboard
 
----
-
-# UI / UX Screenshots
-
-## Login
-
-![Kizuna Login](screenshots/login.png)
-
-Role-based authentication for users and administrators.
+- Overview
+- Live Map
+- Users
+- Departments
+- Railway Network
+- Predictive Maintenance
+- System Logs
+- Data Management
 
 ---
 
-## User Dashboard
+## 16. Application Screens
 
-![Kizuna Dashboard](screenshots/User_dashboard.png)
+Screenshots are organized under `screenshots/`.
 
-The main dashboard provides an operational overview of maintenance planning activity.
+Each screenshot is paired with a concise description so the README also serves as product documentation.
 
----
+### 16.1 Login Page
 
-## Network Control
+**Purpose:** KIZUNA Login for User and Admin
+
+![KIZUNA Home](screenshots/login.png)
+
+### 16.2 User Dashboard
+
+**Purpose:** Provides an operational overview of railway maintenance activities, planning status, and network information.
+
+![User Dashboard](screenshots/user_dashboard.png)
+
+### 16.3 Network Control
+
+**Purpose:** Provides a visual representation of railway network sections and operational information required for maintenance planning.
+
 ![Network Control](screenshots/network_control.png)
 
----
-## Maintenance
+### 16.4 Maintenance Management
 
-![Maintenance Management](screenshots/maintenance_task.png)
+**Purpose:** Allows users to monitor and manage maintenance tasks across railway sections.
 
-Create, inspect, prioritize, update and complete maintenance tasks.
+Key information includes task, department, criticality, severity, urgency, duration, status, and planned date.
 
----
+![Maintenance](screenshots/mtask_1.png)
+![Maintenance](screenshots/mtask_2.png)
 
-## Defects
+### 16.5 Predictive Maintenance
 
-![Defect Management]
+**Purpose:** Provides maintenance risk intelligence using the priority engine and ML-based anomaly detection.
 
-Manage asset defects and their operational priority.
+The page highlights high-risk tasks, unusual patterns, overall risk, and task-level risk information.
 
----
+![Predictive Maintenance](screenshots/pmain_3.png)
+### 16.6 Maintenance Risk Review
 
-## Train Movements
+**Purpose:** Provides a detailed view of an individual maintenance task, including risk summary, priority assessment, risk factors, operational impact, train impact, planning context, and maintenance information.
+
+![Predictive Maintenance](screenshots/pmain_1.png)
+![Predictive Maintenance](screenshots/pmain_2.png)
+
+### 16.7 Defect Management
+
+**Purpose:** Provides visibility into reported railway defects and their operational characteristics.
+
+![Defects](screenshots/defects.png)
+
+### 16.8 Train Movements
+
+**Purpose:** Displays train movement and timetable information used for operational planning and train-impact analysis.
 
 ![Train Movements](screenshots/train_movements.png)
 
-View train timetable and movement information used by the planning engine.
+### 16.9 Block Planning
+
+**Purpose:** Provides the planning interface for coordinating maintenance activities into operational blocks.
+
+![Block Planning](screenshots/block_planning.png)
+
+### 16.10 Optimization
+
+**Purpose:** Runs constraint-based optimization to generate feasible maintenance plans while considering railway operational constraints.
+
+![Optimization](screenshots/op_1.png)
+![Optimization](screenshots/op_2.png)
+
+### 16.11 Plan History
+
+**Purpose:** Provides visibility into previously generated maintenance plans and planning history.
+
+![Plan History](screenshots/pl_1.png)
+![Plan History](screenshots/pl_2.png)
+![Plan History](screenshots/pl_3.png)
 
 ---
 
-## Optimization
+## 17. Administration Interface
 
-![Optimization](docs/screenshots/optimization.png)
+### 17.1 Admin Overview
 
-The optimization interface displays:
+**Purpose:** Provides administrators with a high-level view of system activity and operational planning.
 
-- Maintenance task count
-- Joint blocks generated
-- Solver status
-- Scheduled tasks
-- Time slots
-- Department coordination
+![Admin Overview](screenshots/ad_overview.png)
+
+### 17.2 Admin Predictive Maintenance
+
+**Purpose:** Provides administrators with centralized visibility into maintenance risk intelligence across departments.
+
+![Admin Predictive Maintenance](screenshots/pm_1.png)
+![Admin Predictive Maintenance](screenshots/pm_2.png)
+
+### 17.3 Department Management
+
+**Purpose:** Provides department-level operational visibility and maintenance information.
+
+![Admin Departments](screenshots/department_ad.png)
+### 17.4 Railway Network
+
+**Purpose:** Provides administrators with railway network and section-level information.
+
+![Admin Network](screenshots/admin_nc.png)
+
+### 17.5 User Management
+
+**Purpose:** Allows administrators to manage platform users and access.
+
+![Admin Users](screenshots/ad_um.png)
+
+### 17.6 Data Management
+
+**Purpose:** Provides access to operational railway datasets and data management functionality.
+
+![Admin Data](screenshots/ad_dm.png)
+
+### 17.7 System Logs / Status
+
+**Purpose:** Provides system-level operational and service information for administrators.
+
+![System Status](screenshots/admin_syschk.png)
 
 ---
 
-## Joint Block
-
-
-
-Example of compatible Track and Signal maintenance activities consolidated into a joint block.
-
----
-
-## Weekly Planning
-
-
-
-Seven-day maintenance workload planning.
-
----
-
-## Monthly Planning
-
-
-
-Thirty-day maintenance workload planning.
-
----
-
-## Admin Overview
-
-
-
-Administrative monitoring of users, departments, planning data and system modules.
-
----
-
-# End-to-End Workflow
-
-## Step 1 — Maintenance Input
-
-Maintenance teams create tasks containing:
+## 18. Data Flow
 
 ```text
-Section
-Department
-Criticality
-Severity
-Urgency
-Duration
+Raw Railway Data
+      |
+      v
+Normalization
+      |
+      v
+Database
+      |
+      +-- Maintenance
+      +-- Defects
+      +-- Trains
+      +-- Train Stops
+      |
+      v
+Operational Intelligence
+      |
+      +-- Priority
+      +-- Risk
+      +-- Train Impact
+      +-- Window Availability
+      |
+      v
+Optimization
+      |
+      v
+Maintenance Plan
 ```
-
-## Step 2 — Defect Input
-
-Asset defects are recorded with severity and criticality information.
-
-## Step 3 — Priority Calculation
-
-The system calculates a priority score based on maintenance characteristics and train impact.
-
-## Step 4 — Train Impact
-
-Train-stop data is analyzed to determine potentially affected train movements.
-
-## Step 5 — Corridor Availability
-
-Available maintenance windows are derived from train occupancy.
-
-## Step 6 — Joint Block Detection
-
-Compatible maintenance tasks on the same physical section are identified as joint-work opportunities.
-
-## Step 7 — CP-SAT Optimization
-
-The solver schedules maintenance tasks while respecting operational constraints.
-
-## Step 8 — Optimized Plan
-
-The system produces:
-
-- Scheduled maintenance tasks
-- Maintenance time slots
-- Joint maintenance blocks
-- Solver status
-- Task priorities
-
-## Step 9 — Long-Horizon Planning
-
-The maintenance workload can then be distributed into:
-
-- Weekly plans
-- Monthly plans
 
 ---
 
-# Example Optimization Result
+## 19. Explainability
 
-A representative prototype optimization run processed:
+KIZUNA separates three major intelligence layers:
 
-```text
-Total Maintenance Tasks : 5
-Joint Blocks Generated  : 1
-Solver Status            : OPTIMIZED
-```
+### Explainable Operational Priority
 
-Example:
+The priority engine explicitly exposes the factors contributing to a task's score.
 
-```text
-JB-001
+### ML Risk Intelligence
 
-Section:
-RTM-NAD
+The ML layer identifies unusual operational patterns and provides additional risk information.
 
-Time:
-02:25 – 02:55
+### Optimization
 
-Departments:
-Signal + Track
-```
+The CP-SAT layer evaluates operational constraints and generates feasible plans.
 
-This demonstrates how independent departmental maintenance requests can be converted into a coordinated maintenance block.
+This separation makes the overall system easier to understand, validate, and demonstrate.
 
 ---
 
-# Railway System Integration Model
+## 20. Security
 
-Kizuna is designed around a common maintenance planning layer capable of consuming information from railway operational systems.
+KIZUNA includes role-based authentication mechanisms.
 
-## TMS
-
-Track Management System data can provide track-related maintenance requirements.
-
-Examples include:
-
-- Track inspections
-- Track maintenance
-- Rail grinding
-- Track defects
-
-## SMMS
-
-Signalling Maintenance Management System data can provide signalling maintenance and defect information.
-
-## TDMS
-
-Traction Distribution Management System data can provide electrical and traction-distribution maintenance requirements.
-
-## COA
-
-Control Office Application represents the operational planning side.
-
-It can provide:
-
-- Train movement information
-- Timetable information
-- Control Office forecasts
-- Goods-train forecasts
-
-### Current Prototype Scope
-
-The current prototype demonstrates scheduling using timetable-derived train occupancy and corridor availability.
-
-A live goods-train forecast is not currently connected.
-
-The architecture is designed so that Control Office goods-train forecasts can be incorporated as an additional planning input.
-
----
-
-# Why CP-SAT?
-
-Railway maintenance scheduling contains multiple discrete scheduling decisions and operational constraints.
-
-For example:
-
-```text
-Task A
-RTM-NAD
-08:00 – 09:00
-
-Task B
-RTM-NAD
-08:30 – 09:00
-```
-
-If the tasks are incompatible:
-
-```text
-A and B cannot overlap
-```
-
-If they are compatible:
-
-```text
-A + B
-    ↓
-Joint Maintenance Block
-```
-
-CP-SAT is suitable for this type of scheduling problem because it can model discrete variables, time windows, conflicts, and optimization objectives simultaneously.
-
----
-
-# Optimization Objectives
-
-Kizuna considers several objectives:
-
-## Maintenance Priority
-
-Higher-priority maintenance tasks receive stronger scheduling preference.
-
-## Operational Impact
-
-Tasks affecting more train movements receive greater importance.
-
-## Feasible Windows
-
-Maintenance is scheduled within available corridor windows.
-
-## Conflict Avoidance
-
-Incompatible maintenance activities are prevented from overlapping.
-
-## Joint Work
-
-Compatible departmental tasks are encouraged to be consolidated.
-
-## Schedule Efficiency
-
-The optimizer attempts to reduce unnecessary scheduling fragmentation and improve maintenance-window utilization.
-
----
-
-# Security
-
-Kizuna implements:
+Security components include:
 
 - JWT-based authentication
-- Role-based access control
-- Protected API endpoints
-- Password hashing using bcrypt
 - Separate user and administrator access
+- Password hashing using bcrypt
+- Protected administrative APIs
+- Token-based API authorization
 
 ---
 
-# Project Structure
+## 21. Project Structure
 
 ```text
-Kizuna/
-│
-├── frontend/
-│   ├── src/
-│   │   ├── App.jsx
-│   │   ├── Login.jsx
-│   │   ├── DashboardLayout.jsx
-│   │   ├── Maintenance.jsx
-│   │   ├── Defects.jsx
-│   │   ├── TrainMovements.jsx
-│   │   ├── BlockPlanning.jsx
-│   │   ├── Optimization.jsx
-│   │   ├── PlanHistory.jsx
-│   │   ├── MapDashboard.jsx
-│   │   ├── AdminDashboard.jsx
-│   │   ├── AdminOverview.jsx
-│   │   ├── AdminDepartments.jsx
-│   │   ├── AdminNetwork.jsx
-│   │   ├── AdminData.jsx
-│   │   └── AdminSystemStatus.jsx
-│   │
-│   └── vite.config.js
-│
-├── backend/
-│   ├── routers/
-│   │   ├── maintenance.py
-│   │   ├── defects.py
-│   │   ├── planning.py
-│   │   ├── optimizer.py
-│   │   ├── trains.py
-│   │   └── admin.py
-│   │
-│   ├── services/
-│   │   ├── priority_engine.py
-│   │   ├── train_impact.py
-│   │   ├── planning.py
-│   │   └── optimizer.py
-│   │
-│   ├── models.py
-│   ├── database.py
-│   ├── auth.py
-│   └── main.py
-│
-├── data/
-│   ├── stations_import.csv
-│   ├── trains_import.csv
-│   ├── train_stops_import.csv
-│   ├── ratlam_indore_cleaned.csv
-│   └── indore_ratlam_cleaned.csv
-│
-└── docs/
-    └── screenshots/
+KIZUNA/
+|
++-- frontend/
+|   +-- src/
+|       +-- App.jsx
+|       +-- main.jsx
+|       +-- DashboardLayout.jsx
+|       +-- UserSidebar.jsx
+|       +-- AdminSidebar.jsx
+|       +-- Maintenance.jsx
+|       +-- PredictiveMaintenance.jsx
+|       +-- MaintenanceRiskReview.jsx
+|       +-- BlockPlanning.jsx
+|       +-- Optimization.jsx
+|       +-- ...
+|   +-- package.json
+|
++-- backend/
+|   +-- app/
+|       +-- routers/
+|       +-- services/
+|       +-- models/
+|       +-- schemas/
+|       +-- main.py
+|   +-- data/
+|   +-- requirements.txt
+|
++-- docs/
+|   +-- screenshots/
+|
++-- README.md
 ```
 
 ---
 
-# Installation
+## 22. Installation
 
-## Prerequisites
-
-Install:
+### Prerequisites
 
 - Python 3.10+
-- Node.js
-- npm
+- Node.js 18+
 - PostgreSQL
+- Git
 
----
-
-## Backend Setup
-
-Navigate to the backend directory:
+### Backend Setup
 
 ```bash
 cd backend
-```
-
-Create a virtual environment:
-
-```bash
 python -m venv venv
 ```
 
-### Windows
+Windows:
 
 ```bash
-venv\Scripts\activate
+venv\Scriptsctivate
 ```
 
-### Linux / macOS
+Linux / macOS:
 
 ```bash
 source venv/bin/activate
@@ -1047,12 +747,12 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-Configure the PostgreSQL database and required environment variables.
+Configure the database connection using the project's environment configuration.
 
-Start the backend:
+Start the FastAPI server:
 
 ```bash
-uvicorn main:app --reload
+uvicorn app.main:app --reload
 ```
 
 Backend:
@@ -1061,299 +761,169 @@ Backend:
 http://localhost:8000
 ```
 
-FastAPI documentation:
+API documentation:
 
 ```text
 http://localhost:8000/docs
 ```
 
----
-
-# Frontend Setup
-
-Navigate to the frontend directory:
+### Frontend Setup
 
 ```bash
 cd frontend
-```
-
-Install dependencies:
-
-```bash
 npm install
-```
-
-Start the development server:
-
-```bash
 npm run dev
 ```
 
-Frontend:
-
-```text
-http://localhost:5173
-```
-
-The Vite development server proxies `/api` requests to the FastAPI backend.
+The Vite development server will provide the frontend URL in the terminal.
 
 ---
 
-# Database
+## 23. API Proxy
 
-Kizuna uses PostgreSQL for persistent storage.
+During development, the frontend communicates with the FastAPI backend through the Vite API proxy.
 
-The database stores:
+```text
+Frontend
+   |
+   | /api/*
+   v
+Vite Proxy
+   |
+   v
+FastAPI
+   |
+   v
+PostgreSQL
+```
+
+---
+
+## 24. Prototype Dataset
+
+The prototype uses railway operational datasets containing information such as:
 
 - Stations
 - Trains
 - Train stops
-- Maintenance tasks
-- Defects
-- Planning information
-- Users
-- Administrators
-
-Maintenance tasks include fields such as:
-
-```text
-id
-title
-description
-section_from
-section_to
-department
-criticality
-severity
-urgency
-duration_minutes
-status
-created_at
-planned_date
-```
-
----
-
-# Dataset
-
-The prototype contains structured railway timetable information:
-
-```text
-7 Stations
-42 Trains
-188 Train Stops
-```
-
-The prototype also contains maintenance and defect records for demonstration purposes.
-
-The architecture allows these prototype datasets to be replaced with live railway system integrations in a production environment.
-
----
-
-# Prototype Limitations
-
-Kizuna is a prototype and should not be treated as a production railway control system.
-
-Current limitations include:
-
-1. TMS, SMMS, TDMS and COA are not connected through live production interfaces.
-2. Goods-train forecast is not currently a live input.
-3. Historical labelled maintenance data was not available for training a production ML model.
-4. The current priority engine is an explainable weighted baseline.
-5. Maintenance and defect records are prototype/simulated data.
-6. Department compatibility rules require validation against actual railway SOPs and safety procedures.
-7. Production deployment would require operational, engineering and safety validation.
-
----
-
-# Future Scope
-
-## Live Railway Integrations
-
-Integrate directly with approved railway systems such as:
-
-- TMS
-- SMMS
-- TDMS
-- COA
-
-## Goods-Train Forecast Integration
-
-Use Control Office goods-train forecasts to dynamically update corridor availability.
-
-## Machine Learning
-
-Historical operational data can be used to train models for:
-
-- Asset failure prediction
-- Maintenance urgency prediction
-- Expected downtime
-- Delay probability
-- Maintenance duration estimation
-
-## Dynamic Replanning
-
-Automatically re-run optimization when:
-
-- Train schedules change
-- New defects arrive
-- Maintenance priority changes
-- Corridor availability changes
-- Emergency work is introduced
-
-## Advanced Optimization
-
-Future versions can incorporate:
-
-- Crew availability
-- Equipment availability
-- Possession rules
-- Maintenance dependencies
-- Weather conditions
-- Emergency maintenance
-- Multi-objective optimization
-
-## Large-Scale Deployment
-
-The architecture can be scaled to larger railway networks containing significantly more:
-
-- Stations
-- Trains
 - Railway sections
-- Maintenance tasks
-- Operational constraints
+- Maintenance activities
+- Defects
+
+Current prototype network:
+
+| Dataset | Records |
+|---|---:|
+| Stations | 7 |
+| Trains | 42 |
+| Train Stops | 188 |
+
+These datasets are used to demonstrate train-impact analysis, maintenance-window analysis, and coordinated block planning.
 
 ---
 
-# Impact
-
-Kizuna aims to shift railway maintenance planning from independent departmental scheduling toward coordinated corridor-level optimization.
-
-Potential benefits include:
-
-- Reduced maintenance conflicts
-- Better utilization of maintenance windows
-- Reduced repeated corridor blocking
-- Improved cross-department coordination
-- Priority-based maintenance scheduling
-- Better visibility of train impact
-- Improved weekly and monthly planning
-- Improved asset availability
-
----
-
-# Innovation
-
-The core innovation of Kizuna is not simply generating a maintenance calendar.
-
-Kizuna combines:
+## 25. Optimization Workflow
 
 ```text
-Maintenance Priority
-        +
-Train Impact
-        +
-Train Occupancy
-        +
-Corridor Availability
-        +
-Department Compatibility
-        +
-Constraint Optimization
-        =
-Coordinated Railway Maintenance Plan
-```
-
-This enables multiple departments to be considered together instead of generating independent maintenance schedules.
-
----
-
-# Demonstration Flow
-
-For a project demonstration, the recommended workflow is:
-
-```text
-1. Login
-      ↓
-2. Dashboard
-      ↓
-3. Maintenance
-      ↓
-4. Defects
-      ↓
-5. Train Movements
-      ↓
-6. Block Planning
-      ↓
-7. Run Optimization
-      ↓
-8. View Optimized Schedule
-      ↓
-9. View Joint Block
-      ↓
-10. Generate Weekly Plan
-      ↓
-11. Generate Monthly Plan
-      ↓
-12. Open Admin Portal
-```
-
-The key demonstration moment is:
-
-```text
-Independent Maintenance Requests
-              ↓
-       Kizuna Optimizer
-              ↓
-Coordinated Joint Maintenance Block
+Maintenance Requests
+        |
+        v
+Priority Calculation
+        |
+        v
+Risk Intelligence
+        |
+        v
+Train Impact Analysis
+        |
+        v
+Available Window Detection
+        |
+        v
+Conflict Detection
+        |
+        v
+Compatible Task Grouping
+        |
+        v
+CP-SAT Optimization
+        |
+        v
+Feasible Maintenance Plan
 ```
 
 ---
 
-# Smart India Hackathon
+## 26. What Makes KIZUNA Different
 
-## Problem Statement
+KIZUNA is designed around the principle that railway maintenance should not be planned independently from railway operations.
 
-**SIH26027 — AI-Powered Automatic Block Planning to Maximize Asset Availability for Train Operations on Indian Railways**
+Instead of:
 
-### Organization
+```text
+Maintenance Planning
+        +
+Train Operations
+```
 
-Ministry of Railways
+KIZUNA creates a coordinated planning layer:
 
-### Category
+```text
+Maintenance
+      +
+Defects
+      +
+Train Operations
+      +
+Risk Intelligence
+      +
+Operational Windows
+      +
+Optimization
+      |
+      v
+Coordinated Block Plan
+```
 
-Software
-
-### Theme
-
-Transportation & Logistics
-
-### Hackathon
-
-Smart India Hackathon 2026
-
----
-
-# Project Objective
-
-Kizuna demonstrates how intelligent optimization can help railway maintenance teams coordinate maintenance work around actual train movement and corridor constraints.
-
-The long-term objective is to maximize asset availability while reducing unnecessary operational disruption caused by fragmented maintenance planning.
-
----
-
-# Team
-
-Developed as a prototype solution for:
-
-**Smart India Hackathon 2026**
-
-**SIH26027 — AI-Powered Automatic Block Planning to Maximize Asset Availability for Train Operations on Indian Railways**
+This enables maintenance planning to become more operationally aware and explainable.
 
 ---
 
-# License
+## 27. Future Scope
 
-This project is developed as a prototype for Smart India Hackathon 2026.
+The prototype can be extended with:
 
-For academic, demonstration, and evaluation purposes.
+- Real-time TMS/SMMS/TDMS integration
+- Live railway telemetry
+- Historical maintenance failure labels
+- Supervised failure prediction
+- Advanced resource allocation
+- Crew and equipment constraints
+- Real-time disruption handling
+- Network-wide optimization
+- Digital twin integration
+- Continuous model monitoring
+- Production-grade railway deployment
+
+---
+
+## 28. Project Objective
+
+The ultimate objective of KIZUNA is to provide railway planners with a unified decision-support system that can answer:
+
+> **What maintenance needs to be done, how important is it, what operational impact will it create, and when should compatible activities be executed together?**
+
+By combining operational intelligence, ML-assisted risk analysis, and constraint-based optimization, KIZUNA provides a foundation for coordinated railway maintenance planning.
+
+---
+
+## 29. Team
+
+**KIZUNA Team**
+
+---
+
+## License
+
+This project is developed as a prototype.
+

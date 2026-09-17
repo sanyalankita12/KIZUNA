@@ -13,6 +13,7 @@ from .api import (
     defects,
     corridor_availability,
     planning,
+    scenario,
 )
 
 from .database import Base, SessionLocal, engine
@@ -42,6 +43,7 @@ app.include_router(optimizer.router)
 app.include_router(defects.router)
 app.include_router(corridor_availability.router)
 app.include_router(planning.router)
+app.include_router(scenario.router)
 
 @app.on_event("startup")
 def seed_default_admin():

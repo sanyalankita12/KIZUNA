@@ -25,6 +25,10 @@ const Login = () => {
 
       console.log('Login endpoint:', endpoint);
 
+      // Clear previous authentication state
+      localStorage.removeItem('admin_token');
+      localStorage.removeItem('user_token');
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -38,11 +42,16 @@ const Login = () => {
 
       const data = await response.json();
 
-      console.log('Login response:', response.status, data);
+      console.log(
+        'Login response:',
+        response.status,
+        data
+      );
 
       if (!response.ok) {
         throw new Error(
-          data.detail || 'Invalid username or password'
+          data.detail ||
+            'Invalid username or password'
         );
       }
 
@@ -52,20 +61,89 @@ const Login = () => {
         );
       }
 
-      // Clear old tokens first
-      localStorage.removeItem('admin_token');
-      localStorage.removeItem('user_token');
+      const token = data.access_token;
+
+      // =====================================================
+      // ADMIN LOGIN
+      // =====================================================
 
       if (loginType === 'admin') {
-        localStorage.setItem('admin_token', data.access_token);
-        navigate('/admin/dashboard', { replace: true });
-      } else {
-        localStorage.setItem('user_token', data.access_token);
-        navigate('/map', { replace: true });
+        localStorage.setItem(
+          'admin_token',
+          token
+        );
+
+        console.log(
+          'Admin token saved. Verifying token...'
+        );
+
+        const verifyResponse = await fetch(
+          '/api/admin/me',
+          {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const verifyData =
+          await verifyResponse.json();
+
+        console.log(
+          'Admin token verification:',
+          verifyResponse.status,
+          verifyData
+        );
+
+        if (!verifyResponse.ok) {
+          localStorage.removeItem(
+            'admin_token'
+          );
+
+          throw new Error(
+            verifyData.detail ||
+              'Admin login succeeded, but the authentication token could not be verified.'
+          );
+        }
+
+        console.log(
+          'Admin authentication verified successfully.'
+        );
+
+        navigate('/admin/overview', {
+          replace: true,
+        });
+
+        return;
       }
+
+      // =====================================================
+      // USER LOGIN
+      // =====================================================
+
+      localStorage.setItem(
+        'user_token',
+        token
+      );
+
+      console.log(
+        'User token saved successfully.'
+      );
+
+      navigate('/map', {
+        replace: true,
+      });
     } catch (err) {
-      console.error('Login error:', err);
-      setError(err.message || 'Something went wrong.');
+      console.error(
+        'Login error:',
+        err
+      );
+
+      setError(
+        err.message ||
+          'Something went wrong.'
+      );
     } finally {
       setLoading(false);
     }
@@ -198,7 +276,9 @@ const Login = () => {
                     id="username"
                     type="text"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    onChange={(e) =>
+                      setUsername(e.target.value)
+                    }
                     placeholder={
                       loginType === 'admin'
                         ? 'Enter admin username'
@@ -223,7 +303,9 @@ const Login = () => {
                     id="password"
                     type="password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) =>
+                      setPassword(e.target.value)
+                    }
                     placeholder="Enter password"
                     required
                     autoComplete="current-password"
@@ -237,7 +319,9 @@ const Login = () => {
                   disabled={loading}
                   className="w-full rounded-lg bg-[#fb7f1c] py-3 text-sm font-bold text-white shadow-md transition hover:bg-[#e16f15] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {loading ? 'Signing in...' : 'Sign in'}
+                  {loading
+                    ? 'Signing in...'
+                    : 'Sign in'}
                 </button>
 
               </form>

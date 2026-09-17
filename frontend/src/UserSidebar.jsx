@@ -1,7 +1,10 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 
-const UserSidebar = ({ userId = 'ID: OP-84920', department = 'Dept: Operations' }) => {
+const UserSidebar = ({
+  userId = 'ID: OP-84920',
+  department = 'Dept: Operations',
+}) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -13,6 +16,10 @@ const UserSidebar = ({ userId = 'ID: OP-84920', department = 'Dept: Operations' 
     { name: 'Overview', path: '/dashboard' },
     { name: 'Network Control', path: '/network-control' },
     { name: 'Maintenance Tasks', path: '/maintenance' },
+
+    // NEW ML MODULE
+    { name: 'Predictive Maintenance', path: '/predictive-maintenance' },
+
     { name: 'Defects', path: '/defects' },
     { name: 'Train Movements', path: '/train-movements' },
     { name: 'Block Planning', path: '/block-planning' },
@@ -27,6 +34,7 @@ const UserSidebar = ({ userId = 'ID: OP-84920', department = 'Dept: Operations' 
           <p className="text-xs font-semibold uppercase tracking-widest text-orange-300">
             Indian Railways
           </p>
+
           <h2 className="mt-1 text-2xl font-bold tracking-wide">
             KIZUNA
           </h2>
@@ -39,7 +47,9 @@ const UserSidebar = ({ userId = 'ID: OP-84920', department = 'Dept: Operations' 
               to={item.path}
               className={({ isActive }) =>
                 `px-4 py-2.5 rounded-lg transition-colors text-sm font-medium ${
-                  isActive ? 'bg-[#fb7f1c] text-white shadow-md' : 'text-blue-100 hover:bg-blue-900/50'
+                  isActive
+                    ? 'bg-[#fb7f1c] text-white shadow-md'
+                    : 'text-blue-100 hover:bg-blue-900/50'
                 }`
               }
             >
@@ -53,9 +63,11 @@ const UserSidebar = ({ userId = 'ID: OP-84920', department = 'Dept: Operations' 
         <div className="bg-blue-950/40 px-4 py-2.5 rounded-lg text-blue-100 font-medium border border-blue-800/30">
           {userId}
         </div>
+
         <div className="bg-blue-950/40 px-4 py-2.5 rounded-lg text-blue-100 font-medium border border-blue-800/30">
           {department}
         </div>
+
         <button
           onClick={handleLogout}
           className="mt-2 text-left px-4 py-2.5 text-red-300 hover:text-red-100 hover:bg-red-900/30 rounded-lg transition-colors font-bold"

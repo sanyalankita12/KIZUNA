@@ -496,7 +496,7 @@ Each screenshot is paired with a concise description so the README also serves a
 
 **Purpose:** Provides an operational overview of railway maintenance activities, planning status, and network information.
 
-![User Dashboard](screenshots/user_dashboard.png)
+![User Dashboard](screenshots/User_dashboard.png)
 
 ### 16.3 Network Control
 
